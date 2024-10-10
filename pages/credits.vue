@@ -43,7 +43,7 @@
                 {{ tech.name }}
               </h3>
             </div>
-            <p class="mt-4 text-default">{{ tech.description }}</p>
+            <p class="mt-4 text-default" v-html="tech.description" />
           </div>
         </div>
       </div>
@@ -86,10 +86,12 @@
                 <div
                   class="rounded-xl border border-border-default bg-canvas-default p-8"
                 >
-                  <h3 class="text-2xl font-bold text-high-contrast">
+                  <h3 class="text-2xl font-bold text-high-contrast text-center">
                     {{ milestone.title }}
                   </h3>
-                  <p class="mt-4 text-default">{{ milestone.description }}</p>
+                  <p class="mt-4 text-default text-center">
+                    {{ milestone.description }}
+                  </p>
 
                   <!-- Features Grid -->
                   <div
@@ -167,7 +169,8 @@ import {
   Users,
   Joystick,
   FileVideo2,
-  Monitor
+  Monitor,
+  Target
 } from 'lucide-vue-next';
 
 const demos = [
@@ -202,7 +205,7 @@ const technologies = [
     name: 'Windows Graphic Capture',
     icon: Cpu,
     description:
-      'Harnesses GPU capabilities for efficient video capture and encoding.'
+      "Harnesses GPU capabilities for efficient video capture and encoding. <a href='https://github.com/robmikh/screenshot-rs'>screenshot-rs</a>, <a href='https://github.com/enigo-rs/enigo'>enigo</a>"
   },
   {
     name: 'WebRTC',
@@ -268,9 +271,9 @@ const milestones = [
         icon: Joystick
       },
       {
-        name: "Early <a href='https://quic.video/'>Media Over Quic</a> R&D?",
-        description: 'Use new protocol to transmit data',
-        icon: FileVideo2
+        name: 'Multi Monitor Support',
+        description: 'Switch monitor at ease',
+        icon: Monitor
       }
     ]
   },
@@ -280,14 +283,26 @@ const milestones = [
     title: 'Alpha Public Release',
     description:
       'Launch of first release (1 portable executable file) for public to test.',
-    features: []
+    features: [
+      {
+        name: "Early <a href='https://quic.video/'>Media Over QUIC</a> R&D?",
+        description: 'Use new protocol to transmit data',
+        icon: FileVideo2
+      }
+    ]
   },
   {
     date: 'Q4 2025 ~',
     status: 'Planned',
     title: 'Enterprise Features & Open Sourcing',
     description: 'Advanced features for large-scale deployments.',
-    features: []
+    features: [
+      {
+        name: 'Enterprise vs Open Source',
+        description: 'Choose route from here',
+        icon: Target
+      }
+    ]
   }
 ];
 </script>

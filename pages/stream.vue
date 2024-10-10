@@ -125,10 +125,7 @@
           @click="toggleMouse"
           tabindex="-1"
         >
-          <Icon
-            :name="mouseEnabled ? 'lucide:mouse' : 'lucide:mouse-off'"
-            :class="iconClass"
-          />
+          <Icon :name="mouseEnabled ? 'lucide:mouse' : 'lucide:mouse-off'" />
         </button>
 
         <!-- Keyboard Toggle -->
@@ -142,7 +139,6 @@
         >
           <Icon
             :name="keyboardEnabled ? 'lucide:keyboard' : 'lucide:keyboard-off'"
-            :class="iconClass"
           />
         </button>
 
@@ -155,10 +151,7 @@
           @click="toggleAudio"
           tabindex="-1"
         >
-          <Icon
-            :name="audioEnabled ? 'lucide:volume-2' : 'lucide:volume-x'"
-            :class="iconClass"
-          />
+          <Icon :name="audioEnabled ? 'lucide:volume-2' : 'lucide:volume-x'" />
         </button>
 
         <!-- Fullscreen Toggle -->
@@ -170,10 +163,7 @@
           @click="toggleFullscreen"
           tabindex="-1"
         >
-          <Icon
-            :name="isFullscreen ? 'lucide:minimize' : 'lucide:maximize'"
-            :class="iconClass"
-          />
+          <Icon :name="isFullscreen ? 'lucide:minimize' : 'lucide:maximize'" />
         </button>
 
         <!-- Mouse Lock Toggle -->
@@ -185,10 +175,7 @@
           @click="toggleMouseLock"
           tabindex="-1"
         >
-          <Icon
-            :name="isPointerLocked ? 'lucide:lock' : 'lucide:unlock'"
-            :class="iconClass"
-          />
+          <Icon :name="isPointerLocked ? 'lucide:lock' : 'lucide:unlock'" />
         </button>
 
         <!-- Disconnect Button -->
@@ -199,7 +186,7 @@
           title="Disconnect"
           tabindex="-1"
         >
-          <Icon name="lucide:power" :class="iconClass" />
+          <Icon name="lucide:power" />
         </button>
       </template>
     </FloatingMenu>

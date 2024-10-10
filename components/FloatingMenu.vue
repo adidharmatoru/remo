@@ -26,7 +26,7 @@
           :title="title"
           @click="$emit('toggle')"
         >
-          <Icon name="fluent:remote-16-filled" :class="iconClass" />
+          <Icon name="fluent:remote-16-filled" />
         </button>
         <div class="floating-menu-divider" />
         <div
@@ -289,11 +289,6 @@ export default {
       () => state.position === 'left' || state.position === 'right'
     );
 
-    const iconClass = computed(() => ({
-      icon: true,
-      'icon-rotated': isVertical.value
-    }));
-
     const anchorPos = computed(() => {
       const halfWidth = (panelEl.value?.clientWidth || 0) / 2;
       const halfHeight = (panelEl.value?.clientHeight || 0) / 2;
@@ -402,7 +397,6 @@ export default {
       showSubmenu,
       submenuPosition,
       submenuStyle,
-      iconClass,
       anchorStyle,
       panelStyle,
       onPointerDown,
@@ -498,6 +492,10 @@ export default {
   flex-direction: column;
   gap: 2px;
   padding: 0 10px;
+}
+
+.floating-menu-vertical .iconify {
+  transform: rotate(-90deg);
 }
 
 .floating-menu-label-main {
@@ -645,8 +643,5 @@ export default {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-.icon-rotated {
-  transform: rotate(-90deg);
 }
 </style>

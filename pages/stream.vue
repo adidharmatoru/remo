@@ -306,13 +306,18 @@ const onVideoWheel = (event) => {
   const video = videoRef.value;
   if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
 
-  const coords = toSharerCoordinate(event);
-  sendEventData({
+  const sensitivity = 2;
+
+  // Normalize wheel delta values
+  const deltaX = event.deltaX ? event.deltaX : event.wheelDeltaX; // For older browsers
+  const deltaY = event.deltaY ? event.deltaY : -event.wheelDelta; // For older browsers
+
+  const eventData = {
     type: 'mouse_wheel',
-    ...coords,
-    dx: event.deltaX,
-    dy: event.deltaY
-  });
+    x: parseInt(deltaX, 10),
+    y: parseInt(deltaY / sensitivity, 10),
+  };
+  sendEventData(eventData);
 };
 
 // Keyboard event handlers

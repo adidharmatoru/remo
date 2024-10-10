@@ -40,7 +40,7 @@ const showHeaderFooter = computed(() => {
 :root {
   /* GitHub Light theme colors */
   --color-canvas-default: #ffffff;
-  --color-canvas-subtle: #f6f8fa;
+  --color-canvas-subtle: #fcfcfc;
   --color-border-default: #d0d7de;
   --color-border-muted: #d8dee4;
   --color-neutral-muted: rgba(175, 184, 193, 0.2);
@@ -48,7 +48,7 @@ const showHeaderFooter = computed(() => {
   --color-accent-emphasis: #22c55e;
   --color-header-bg: #ffffff;
   --color-header-border: #d0d7de;
-  --color-fg-default: #24292f;
+  --color-fg-default: #0b0d0e;
   --color-fg-muted: #57606a;
   --color-fg-subtle: #6e7781;
   --color-canvas-overlay: #ffffff;
@@ -119,7 +119,7 @@ a {
 }
 
 .text-high-contrast {
-  color: var(--color-fg-default);
+  color: var(--color-fg-default) !important;
 }
 
 .text-default {

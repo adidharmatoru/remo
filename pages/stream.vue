@@ -29,7 +29,7 @@
           leave-from="opacity-100"
           leave-to="opacity-0"
         >
-          <div class="fixed inset-0 bg-canvas-overlay/50 backdrop-blur-sm" />
+          <div class="fixed inset-0 bg-canvas-subtle backdrop-blur-sm" />
         </TransitionChild>
 
         <div class="fixed inset-0 overflow-y-auto">
@@ -43,7 +43,7 @@
               leave-to="opacity-0 scale-95"
             >
               <DialogPanel
-                class="w-full max-w-md overflow-hidden rounded-lg border border-border-default bg-canvas-overlay shadow-xl"
+                class="w-full max-w-md overflow-hidden rounded-lg border border-border-default bg-canvas-default shadow-xl"
               >
                 <div class="relative p-6">
                   <DialogTitle
@@ -57,7 +57,7 @@
                       v-model="password"
                       type="password"
                       placeholder="Enter device password"
-                      class="w-full rounded-lg border border-border-default bg-canvas-default px-4 py-2 text-high-contrast placeholder-default transition-colors focus:border-accent-emphasis focus:outline-none"
+                      class="w-full rounded-lg border border-border-default bg-canvas-subtle px-4 py-2 text-high-contrast placeholder-default transition-colors focus:border-accent-emphasis focus:outline-none"
                       @keyup.enter="attemptConnection"
                     />
                     <p v-if="errorMessage" class="mt-2 text-sm text-danger-fg">
@@ -546,6 +546,7 @@ onUnmounted(() => {
   mouseTrackEnabled.value = false;
   keyboardEnabled.value = false;
   isPointerLocked.value = false;
+  document.oncontextmenu = null;
 
   // Remove all event listeners
   updateKeyboardListeners();
@@ -591,5 +592,10 @@ video::-webkit-media-controls {
 }
 video::-webkit-media-controls-enclosure {
   display: none !important;
+}
+
+/* Add styles to prevent focus outlines */
+.menu-item:focus {
+  outline: none !important;
 }
 </style>

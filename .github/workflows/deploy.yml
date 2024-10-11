@@ -30,7 +30,7 @@ jobs:
 
   build-and-deploy:
     runs-on: ubuntu-latest
-    needs: test
+    needs: lint-and-test
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

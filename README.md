@@ -1,6 +1,6 @@
 # Remo - Hardware-Accelerated Remote Desktop
 
-Remo is a hardware-accelerated remote desktop solution built with Rust and Nuxt 3. This repository contains the front-end application that provides a seamless user interface for interacting with Remo.
+Remo is a hardware-accelerated remote desktop solution built with Rust and Nuxt 3. This repository contains the front-end application that provides a seamless user interface.
 
 ## Getting Started
 
@@ -29,7 +29,7 @@ To start the development server, run the following command:
 npm run dev
 ```
 
-This will start the server on http://localhost:3000, where you can access the Remo.
+This will start the server on http://localhost:3000, where you can access Remo.
 
 ## Contributing
 

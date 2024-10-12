@@ -10,7 +10,8 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
@@ -25,11 +26,16 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
+    "@nuxt/test-utils": "^3.14.3",
+    "@vue/test-utils": "^2.4.6",
     "eslint": "^9.12.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-vue": "^9.28.0",
     "globals": "^15.11.0",
-    "prettier": "^3.3.3"
+    "happy-dom": "^15.7.4",
+    "playwright-core": "^1.48.0",
+    "prettier": "^3.3.3",
+    "vitest": "^2.1.2"
   }
 }

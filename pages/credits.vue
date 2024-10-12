@@ -286,7 +286,8 @@ const milestones = [
     features: [
       {
         name: "Early <a href='https://quic.video/'>Media Over QUIC</a> R&D?",
-        description: 'Use a new protocol to transmit data that is theoretically faster and smoother.',
+        description:
+          'Use a new protocol to transmit data that is theoretically faster and smoother.',
         icon: FileVideo2
       }
     ]
@@ -295,7 +296,8 @@ const milestones = [
     date: 'Q4 2025 ~',
     status: 'Planned',
     title: 'Enterprise Features or Open Sourcing',
-    description: 'Advanced features for large-scale deployments and geo-destributions.',
+    description:
+      'Advanced features for large-scale deployments and geo-destributions.',
     features: [
       {
         name: 'Enterprise vs Open Source',

@@ -118,19 +118,19 @@ const currentVideoIndex = ref(0);
 
 const videos = [
   {
-    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/code.mov',
+    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/code.webm',
     title: 'Code'
   },
   {
-    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/fps.mov',
+    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/fps.webm',
     title: 'FPS Game'
   },
   {
-    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/moba.mov',
+    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/moba.webm',
     title: 'MOBA/RTS Game'
   },
   {
-    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/watch.mov',
+    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/watch.webm',
     title: 'Media Streaming'
   }
 ];
@@ -154,6 +154,6 @@ onMounted(() => {
 
   setInterval(() => {
     currentVideoIndex.value = (currentVideoIndex.value + 1) % videos.length;
-  }, 5000);
+  }, 10000);
 });
 </script>

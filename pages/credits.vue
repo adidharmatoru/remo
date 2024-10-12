@@ -175,27 +175,27 @@ import {
 
 const demos = [
   {
-    title: 'Educational Use Case',
+    title: 'Productivity',
     description:
-      'This demo shows how to use video streaming for educational purposes.',
+      'Check out how the hardware-accelerated streaming makes remote work and learning a breeze!',
     videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/code.mov'
   },
   {
-    title: 'Media Stream Use Case',
+    title: 'Watch Party',
     description:
-      'Learn how to watch live media streams in a collaborative environment.',
+      'Join the fun with friends and enjoy and control live streams together, all with smooth performance!',
     videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/watch.mov'
   },
   {
-    title: 'FPS Game Use Case',
+    title: '3D / FPS Games',
     description:
-      'Explore how real-time interactions enhance the FPS gaming experience.',
+      'Jump into the action and see Remo makes 3D and FPS gaming super smooth and interactive!',
     videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/fps.mov'
   },
   {
-    title: 'RTS Game Use Case',
+    title: 'MOBA / RTS Games',
     description:
-      'This demo illustrates the strategies used in real-time strategy games.',
+      'Dive into the strategies of MOBAs and RTS games with minimal lag for an awesome experience!',
     videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/moba.mov'
   }
 ];
@@ -282,11 +282,11 @@ const milestones = [
     status: 'Planned',
     title: 'Alpha Public Release',
     description:
-      'Launch of first release (1 portable executable file) for public to test.',
+      'Launch of first release (portable executable file) for public test.',
     features: [
       {
         name: "Early <a href='https://quic.video/'>Media Over QUIC</a> R&D?",
-        description: 'Use new protocol to transmit data',
+        description: 'Use a new protocol to transmit data that is theoretically faster and smoother.',
         icon: FileVideo2
       }
     ]
@@ -294,8 +294,8 @@ const milestones = [
   {
     date: 'Q4 2025 ~',
     status: 'Planned',
-    title: 'Enterprise Features & Open Sourcing',
-    description: 'Advanced features for large-scale deployments.',
+    title: 'Enterprise Features or Open Sourcing',
+    description: 'Advanced features for large-scale deployments and geo-destributions.',
     features: [
       {
         name: 'Enterprise vs Open Source',

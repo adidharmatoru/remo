@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen bg-canvas-subtle pb-12 pt-12">
-    <FloatingMenu />
     <div class="container mx-auto px-8">
       <h1 class="mb-10 text-3xl font-bold text-high-contrast">
         Available Devices

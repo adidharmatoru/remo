@@ -70,6 +70,10 @@ const showHeaderFooter = computed(() => {
   --color-success-fg: #1a7f37;
   --color-canvas-overlay: #ffffff;
   --color-danger-fg: #cf222e;
+
+  /* Scrollbar colors for light mode */
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-track: rgba(0, 0, 0, 0.05);
 }
 
 .dark-mode {
@@ -99,6 +103,10 @@ const showHeaderFooter = computed(() => {
   --color-success-fg: #3fb950;
   --color-canvas-overlay: #161b22;
   --color-danger-fg: #f85149;
+
+  /* Scrollbar colors for dark mode */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-track: rgba(255, 255, 255, 0.05);
 }
 
 body {
@@ -128,5 +136,30 @@ a {
 
 .text-default {
   color: var(--color-fg-muted);
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-fg);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 </style>

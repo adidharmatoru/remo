@@ -79,57 +79,65 @@ export function webRTC() {
   };
 
   const initConnections = () => {
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    if (!userData.id) {
-      return false;
-    }
-    uuid.value = userData.id;
-    name.value = userData.name;
+    return new Promise((resolve) => {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      if (!userData.id) {
+        resolve(false);
+        return;
+      }
+      uuid.value = userData.id;
+      name.value = userData.name;
 
-    // Initialize WebRTC connection
-    peerConnection.value = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.adidharmatoru.dev:3479' }]
+      // Initialize WebRTC connection
+      peerConnection.value = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.adidharmatoru.dev:3479' }]
+      });
+
+      // Handle incoming tracks
+      peerConnection.value.ontrack = (event) => {
+        if (event.track.kind === 'video') {
+          videoStream.value = event.streams[0];
+        } else if (event.track.kind === 'audio') {
+          audioStream.value = event.streams[0];
+        }
+      };
+
+      // Handle ICE candidates
+      peerConnection.value.onicecandidate = (event) => {
+        if (event.candidate && serverConnection.value) {
+          serverConnection.value.send(
+            JSON.stringify({
+              type: 'ice',
+              ice: event.candidate,
+              from: uuid.value,
+              to: currentDeviceId.value
+            })
+          );
+        }
+      };
+
+      // Initialize WebSocket Server connection
+      const websocketUrl = 'wss://remote-ws.adidharmatoru.dev';
+      serverConnection.value = new WebSocket(websocketUrl);
+
+      serverConnection.value.onopen = () => {
+        console.log('WebSocket connected');
+        serverKeepAlive = setInterval(() => {
+          serverConnection.value.send(JSON.stringify({ type: 'keep_alive' }));
+        }, 30000);
+        isConnected.value = true;
+
+        setupDataChannelHandler();
+        startLatencyUpdate();
+        startFreezeDetection();
+        resolve(true);
+      };
+
+      serverConnection.value.onerror = (error) => {
+        console.error('WebSocket connection error:', error);
+        resolve(false);
+      };
     });
-
-    // Handle incoming tracks
-    peerConnection.value.ontrack = (event) => {
-      if (event.track.kind === 'video') {
-        videoStream.value = event.streams[0];
-      } else if (event.track.kind === 'audio') {
-        audioStream.value = event.streams[0];
-      }
-    };
-
-    // Handle ICE candidates
-    peerConnection.value.onicecandidate = (event) => {
-      if (event.candidate && serverConnection.value) {
-        serverConnection.value.send(
-          JSON.stringify({
-            type: 'ice',
-            ice: event.candidate,
-            from: uuid.value,
-            to: currentDeviceId.value
-          })
-        );
-      }
-    };
-
-    // Initialize WebSocket Server connection
-    serverConnection.value = new WebSocket('wss://remote-ws.adidharmatoru.dev');
-
-    serverConnection.value.onopen = () => {
-      console.log('WebSocket connected');
-      serverKeepAlive = setInterval(() => {
-        serverConnection.value.send(JSON.stringify({ type: 'keep_alive' }));
-      }, 30000);
-      isConnected.value = true;
-
-      setupDataChannelHandler();
-      startLatencyUpdate();
-      startFreezeDetection();
-    };
-
-    return true;
   };
 
   // Handle data channel
@@ -239,8 +247,16 @@ export function webRTC() {
     }
   };
 
-  const connectToDevice = (deviceId, password) => {
-    if (!isConnected.value) return false;
+  const connectToDevice = async (deviceId, password) => {
+    if (!isConnected.value) {
+      console.log('Waiting for connection to be established...');
+      await waitForConnection();
+    }
+
+    if (!isConnected.value) {
+      console.error('Failed to establish connection');
+      return false;
+    }
 
     currentDeviceId.value = deviceId;
 
@@ -258,6 +274,19 @@ export function webRTC() {
     );
 
     return true;
+  };
+
+  const waitForConnection = () => {
+    return new Promise((resolve) => {
+      const checkConnection = () => {
+        if (isConnected.value) {
+          resolve();
+        } else {
+          setTimeout(checkConnection, 100);
+        }
+      };
+      checkConnection();
+    });
   };
 
   const disconnect = () => {

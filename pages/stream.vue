@@ -92,18 +92,31 @@
     </TransitionRoot>
 
     <!-- Interaction Prompt -->
-    <div
-      v-if="showInteractPrompt"
-      class="fixed inset-0 flex items-center justify-center bg-black/50"
+    <Transition
+      enter="transition-opacity duration-300"
+      enter-from="opacity-0"
+      enter-to="opacity-100"
+      leave="transition-opacity duration-300"
+      leave-from="opacity-100"
+      leave-to="opacity-0"
     >
-      <div class="rounded-lg bg-white p-6">
-        <h2 class="mb-2 text-lg font-bold">Interaction Required</h2>
-        <p class="mb-4">Please click to enable audio playback</p>
-        <button @click="retryAudio" class="rounded bg-primary-600 px-4 py-2">
-          Enable Audio
-        </button>
+      <div
+        v-if="showInteractPrompt"
+        class="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+      >
+        <div class="text-center">
+          <button
+            @click="retryAudio"
+            class="p-8 rounded-full bg-accent-emphasis hover:bg-accent-emphasis/90 transition-colors"
+          >
+            <Icon name="heroicons:speaker-wave" class="w-32 h-32 text-white" />
+          </button>
+          <p class="mt-4 text-xl font-semibold text-white">
+            Click to enable audio
+          </p>
+        </div>
       </div>
-    </div>
+    </Transition>
 
     <!-- Floating Control Menu -->
     <FloatingMenu
@@ -211,10 +224,12 @@ import { keyboardControl } from '../composables/controls/keyboardControl';
 
 const router = useRouter();
 const route = useRoute();
-const showPasswordModal = ref(true);
+const showPasswordModal = ref(false);
 const password = ref('');
 const errorMessage = ref('');
 const isConnected = ref(false);
+/*global computed*/
+const isEmbedMode = computed(() => route.query.embed === '1');
 
 // Initialize tracks
 const {
@@ -277,26 +292,39 @@ watch(eventChannel, (newChannel) => {
 
 const closePasswordModal = () => {
   showPasswordModal.value = false;
-  router.push('/devices');
+  redirectToDevices();
+};
+
+const showModalError = (error) => {
+  errorMessage.value = error;
+  if (!showPasswordModal.value) {
+    showPasswordModal.value = true;
+  }
 };
 
 const attemptConnection = async () => {
   const deviceId = route.query.deviceId;
   if (!deviceId || !password.value) {
-    errorMessage.value = 'Device ID and password are required.';
+    showModalError('Device ID and password are required.');
     return;
   }
 
-  const success = connectToDevice(deviceId, password.value);
+  const success = await connectToDevice(deviceId, password.value);
   if (!success) {
-    errorMessage.value = 'Connection failed. Please try again.';
+    showModalError('Connection failed. Please try again.');
     return;
   }
 };
 
 const handleDisconnect = () => {
   disconnect();
-  router.push('/devices');
+  redirectToDevices();
+};
+
+const redirectToDevices = () => {
+  if (!isEmbedMode.value) {
+    router.push('/devices');
+  }
 };
 
 // Initialize connections
@@ -320,7 +348,7 @@ onMounted(async () => {
       const signal = JSON.parse(event.data);
 
       if (signal.type === 'join_declined') {
-        errorMessage.value = 'Join declined: ' + signal.reason;
+        showModalError('Join declined: ' + signal.reason);
       } else if (signal.type === 'offer') {
         await handleServerMessage(signal);
         isConnected.value = true;
@@ -330,8 +358,8 @@ onMounted(async () => {
         initVideoTrack(videoStream.value);
         await initAudioTrack(audioStream.value);
       } else if (signal.type === 'room_closed') {
-        errorMessage.value = 'The device is currently offline.';
-        router.push('/devices');
+        showModalError('The device is currently offline.');
+        redirectToDevices();
       } else {
         await handleServerMessage(signal);
       }

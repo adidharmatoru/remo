@@ -342,6 +342,8 @@ onMounted(async () => {
     if (route.query.pwd) {
       password.value = route.query.pwd;
       await attemptConnection();
+    } else {
+      showPasswordModal.value = true;
     }
 
     serverConnection.value.onmessage = async (event) => {

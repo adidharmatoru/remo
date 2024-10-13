@@ -50,5 +50,10 @@ export default defineNuxtConfig({
   },
   build: {
     transpile: ['vue-teleport']
+  },
+  imports: {
+    dirs: [
+      'composables/**'
+    ]
   }
 });

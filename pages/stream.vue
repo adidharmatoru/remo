@@ -203,11 +203,6 @@ import {
   TransitionChild,
   TransitionRoot
 } from '@headlessui/vue';
-import { webRTC } from '../composables/networks/webRTC';
-import { videoTrack } from '../composables/tracks/videoTrack';
-import { audioTrack } from '../composables/tracks/audioTrack';
-import { mouseControl } from '../composables/controls/mouseControl';
-import { keyboardControl } from '../composables/controls/keyboardControl';
 
 const router = useRouter();
 const route = useRoute();
@@ -217,6 +212,7 @@ const errorMessage = ref('');
 const isConnected = ref(false);
 
 // Initialize tracks
+/*global videoTrack*/
 const {
   videoRef,
   isFullscreen,
@@ -226,6 +222,7 @@ const {
   cleanup: cleanupVideo
 } = videoTrack();
 
+/*global audioTrack*/
 const {
   audioRef,
   audioEnabled,
@@ -237,6 +234,7 @@ const {
 } = audioTrack();
 
 // Initialize connection
+/*global webRTC*/
 const {
   initConnections,
   connectToDevice,
@@ -250,6 +248,7 @@ const {
 } = webRTC();
 
 // Initialize mouse controls
+/*global mouseControl*/
 const {
   mouseEnabled,
   isPointerLocked,
@@ -261,6 +260,7 @@ const {
 } = mouseControl(videoRef, eventChannel);
 
 // Initialize keyboard controls
+/*global keyboardControl*/
 const {
   keyboardEnabled,
   toggleKeyboard,

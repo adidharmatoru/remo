@@ -74,6 +74,13 @@ export function webSocket(isGlobal = true) {
     }
   };
 
+  const sendMessageOnConnection = async (message) => {
+    if (!isOnline.value) {
+      await waitForConnection();
+    }
+    return sendMessage(message);
+  };
+
   const waitForConnection = () => {
     return new Promise((resolve) => {
       const checkConnection = () => {
@@ -106,6 +113,7 @@ export function webSocket(isGlobal = true) {
   return {
     isOnline,
     sendMessage,
+    sendMessageOnConnection,
     websocket,
     waitForConnection
   };

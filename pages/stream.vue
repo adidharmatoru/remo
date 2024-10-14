@@ -359,7 +359,7 @@ onMounted(async () => {
         // Initialize video and audio tracks
         initVideoTrack(videoStream.value);
         await initAudioTrack(audioStream.value);
-      } else if (signal.type === 'room_closed') {
+      } else if (signal.type === 'server_closed') {
         showModalError('The device is currently offline.');
         redirectToDevices();
       } else {

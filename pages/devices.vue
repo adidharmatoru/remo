@@ -192,10 +192,10 @@ const selectDevice = (device) => {
 const populateDevices = (data) => {
   const updatedDevices = Object.keys(data).map((room) => ({
     id: data[room].server,
-    name: data[room].server,
+    name: data[room].name,
     viewerCount: data[room].viewer_count,
-    os: 'Windows',
-    version: '0.1.0',
+    os: data[room].os,
+    version: data[room].version,
     online: true
   }));
 

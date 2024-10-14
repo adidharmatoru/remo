@@ -1,12 +1,10 @@
 import { ref, onUnmounted } from 'vue';
 
-export function webRTC() {
+export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
   const peerConnection = ref(null);
-  const serverConnection = ref(null);
   const eventChannel = ref(null);
   const videoStream = ref(null);
   const audioStream = ref(null);
-  let serverKeepAlive = null;
   const isConnected = ref(false);
   const uuid = ref(null);
   const name = ref(null);
@@ -15,68 +13,9 @@ export function webRTC() {
   let latencyInterval = null;
 
   const iceCandidatesQueue = ref([]);
-  const videoFrozen = ref(false); // Track if video is frozen
-  const freezeDetectionInterval = ref(null); // Interval for checking freeze
-  const freezeThreshold = 3000; // Time (in ms) to wait before considering video frozen
-
-  const startFreezeDetection = () => {
-    freezeDetectionInterval.value = setInterval(async () => {
-      if (peerConnection.value && peerConnection.value.getStats) {
-        const stats = await peerConnection.value.getStats();
-        let videoTrackStats = null;
-
-        stats.forEach((report) => {
-          if (report.kind === 'video') {
-            videoTrackStats = report;
-          }
-        });
-
-        if (videoTrackStats) {
-          // Check if frames are being received
-          if (videoTrackStats.framesPerSecond === 0 && !videoFrozen.value) {
-            videoFrozen.value = true;
-
-            // Wait for the freeze threshold duration
-            setTimeout(() => {
-              if (videoFrozen.value) {
-                console.log(
-                  'Video is frozen. Attempting to reestablish the track...'
-                );
-                attemptToReestablishVideoTrack();
-              }
-            }, freezeThreshold);
-          } else if (videoTrackStats.framesPerSecond > 0) {
-            // Video is not frozen anymore
-            videoFrozen.value = false;
-          }
-        }
-      }
-    }, 1000); // Check every second
-  };
-
-  const attemptToReestablishVideoTrack = async () => {
-    try {
-      // Close the existing video stream
-      if (videoStream.value) {
-        videoStream.value.getTracks().forEach((track) => track.stop());
-      }
-
-      // Create a new media stream
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: true
-      });
-      videoStream.value = newStream; // Set the new video stream
-
-      // Add the new track to the peer connection
-      newStream.getTracks().forEach((track) => {
-        peerConnection.value.addTrack(track, newStream);
-      });
-
-      console.log('Reestablished video track successfully.');
-    } catch (error) {
-      console.error('Error reestablishing video track:', error);
-    }
-  };
+  const videoFrozen = ref(false);
+  const freezeDetectionInterval = ref(null);
+  const freezeThreshold = 3000;
 
   const initConnections = () => {
     return new Promise((resolve) => {
@@ -104,47 +43,24 @@ export function webRTC() {
 
       // Handle ICE candidates
       peerConnection.value.onicecandidate = (event) => {
-        if (event.candidate && serverConnection.value) {
-          serverConnection.value.send(
-            JSON.stringify({
-              type: 'ice',
-              ice: event.candidate,
-              from: uuid.value,
-              to: currentDeviceId.value
-            })
-          );
+        if (event.candidate) {
+          sendMessage({
+            type: 'ice',
+            ice: event.candidate,
+            from: uuid.value,
+            to: currentDeviceId.value
+          });
         }
       };
 
-      // Initialize WebSocket Server connection
-      const websocketUrl = 'wss://remote-ws.adidharmatoru.dev';
-      serverConnection.value = new WebSocket(websocketUrl);
-
-      serverConnection.value.onopen = () => {
-        console.log('WebSocket connected');
-        serverKeepAlive = setInterval(() => {
-          serverConnection.value.send(JSON.stringify({ type: 'keep_alive' }));
-        }, 30000);
-        isConnected.value = true;
-
-        setupDataChannelHandler();
-        startLatencyUpdate();
-        startFreezeDetection();
-        resolve(true);
-      };
-
-      serverConnection.value.onerror = (error) => {
-        console.error('WebSocket connection error:', error);
-        resolve(false);
-      };
+      setupDataChannelHandler();
+      startLatencyUpdate();
+      startFreezeDetection();
+      resolve(true);
     });
   };
 
-  // Handle data channel
   const setupDataChannelHandler = () => {
-    if (!serverConnection.value) return;
-
-    // Connect data channel
     if (peerConnection.value) {
       peerConnection.value.ondatachannel = (event) => {
         const dataChannel = event.channel;
@@ -177,6 +93,55 @@ export function webRTC() {
         });
       }
     }, 1000);
+  };
+
+  const startFreezeDetection = () => {
+    freezeDetectionInterval.value = setInterval(async () => {
+      if (peerConnection.value && peerConnection.value.getStats) {
+        const stats = await peerConnection.value.getStats();
+        let videoTrackStats = null;
+
+        stats.forEach((report) => {
+          if (report.kind === 'video') {
+            videoTrackStats = report;
+          }
+        });
+
+        if (videoTrackStats) {
+          if (videoTrackStats.framesPerSecond === 0 && !videoFrozen.value) {
+            videoFrozen.value = true;
+            setTimeout(() => {
+              if (videoFrozen.value) {
+                // console.log(
+                //   'Video is frozen. Attempting to reestablish the track...'
+                // );
+                attemptToReestablishVideoTrack();
+              }
+            }, freezeThreshold);
+          } else if (videoTrackStats.framesPerSecond > 0) {
+            videoFrozen.value = false;
+          }
+        }
+      }
+    }, 1000);
+  };
+
+  const attemptToReestablishVideoTrack = async () => {
+    try {
+      if (videoStream.value) {
+        videoStream.value.getTracks().forEach((track) => track.stop());
+      }
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: true
+      });
+      videoStream.value = newStream;
+      newStream.getTracks().forEach((track) => {
+        peerConnection.value.addTrack(track, newStream);
+      });
+      console.log('Reestablished video track successfully.');
+    } catch (error) {
+      console.error('Error reestablishing video track:', error);
+    }
   };
 
   const handleIceCandidate = async (iceCandidate) => {
@@ -227,14 +192,12 @@ export function webRTC() {
 
           const answer = await peerConnection.value.createAnswer();
           await peerConnection.value.setLocalDescription(answer);
-          serverConnection.value.send(
-            JSON.stringify({
-              type: 'answer',
-              sdp: answer,
-              from: uuid.value,
-              to: currentDeviceId.value
-            })
-          );
+          sendMessage({
+            type: 'answer',
+            sdp: answer,
+            from: uuid.value,
+            to: currentDeviceId.value
+          });
         } catch (e) {
           console.error('Error handling offer:', e);
         }
@@ -248,70 +211,40 @@ export function webRTC() {
   };
 
   const connectToDevice = async (deviceId, password) => {
-    if (!isConnected.value) {
-      console.log('Waiting for connection to be established...');
+    if (!isOnline.value) {
+      // console.log('Waiting for connection to be established...');
       await waitForConnection();
-    }
-
-    if (!isConnected.value) {
-      console.error('Failed to establish connection');
-      return false;
     }
 
     currentDeviceId.value = deviceId;
 
-    serverConnection.value.send(
-      JSON.stringify({
-        type: 'join',
-        room: deviceId,
-        from: uuid.value,
-        name: name.value,
-        auth: {
-          type: 'password',
-          password: password
-        }
-      })
-    );
+    sendMessage({
+      type: 'join',
+      room: deviceId,
+      from: uuid.value,
+      name: name.value,
+      auth: {
+        type: 'password',
+        password: password
+      }
+    });
 
     return true;
   };
 
-  const waitForConnection = () => {
-    return new Promise((resolve) => {
-      const checkConnection = () => {
-        if (isConnected.value) {
-          resolve();
-        } else {
-          setTimeout(checkConnection, 100);
-        }
-      };
-      checkConnection();
-    });
-  };
-
   const disconnect = () => {
-    if (serverConnection.value) {
-      serverConnection.value.send(
-        JSON.stringify({
-          type: 'leave',
-          from: uuid.value
-        })
-      );
-    }
+    sendMessage({
+      type: 'leave',
+      from: uuid.value
+    });
   };
 
   onUnmounted(() => {
     if (latencyInterval) {
       clearInterval(latencyInterval);
     }
-    if (serverKeepAlive) {
-      clearInterval(serverKeepAlive);
-    }
     if (peerConnection.value) {
       peerConnection.value.close();
-    }
-    if (serverConnection.value) {
-      serverConnection.value.close();
     }
     if (freezeDetectionInterval.value) {
       clearInterval(freezeDetectionInterval.value);
@@ -324,13 +257,14 @@ export function webRTC() {
     disconnect,
     handleServerMessage,
     peerConnection,
-    serverConnection,
     eventChannel,
     videoStream,
     audioStream,
     isConnected,
     uuid,
     currentDeviceId,
-    latency
+    latency,
+    websocket,
+    isOnline
   };
 }

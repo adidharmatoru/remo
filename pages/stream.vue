@@ -249,6 +249,10 @@ const {
 } = audioTrack();
 
 // Initialize connection
+/*global webSocket*/
+const { websocket, sendMessage, isOnline, waitForConnection } =
+  webSocket(false);
+
 /*global webRTC*/
 const {
   initConnections,
@@ -258,9 +262,8 @@ const {
   eventChannel,
   videoStream,
   audioStream,
-  serverConnection,
   latency
-} = webRTC();
+} = webRTC(websocket, sendMessage, isOnline, waitForConnection);
 
 // Initialize mouse controls
 /*global mouseControl*/
@@ -286,7 +289,7 @@ const {
 /*global watch*/
 watch(eventChannel, (newChannel) => {
   if (newChannel) {
-    console.log('Event channel established');
+    // console.log('Event channel established');
   }
 });
 
@@ -337,7 +340,7 @@ onMounted(async () => {
 
   setupFullscreenListeners();
 
-  if (serverConnection.value) {
+  if (websocket.value) {
     // Check if password is provided in URL
     if (route.query.pwd) {
       password.value = route.query.pwd;
@@ -346,7 +349,7 @@ onMounted(async () => {
       showPasswordModal.value = true;
     }
 
-    serverConnection.value.onmessage = async (event) => {
+    websocket.value.onmessage = async (event) => {
       const signal = JSON.parse(event.data);
 
       if (signal.type === 'join_declined') {

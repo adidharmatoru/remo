@@ -1,14 +1,16 @@
 <script setup>
-/*global useRoute*/
-const route = useRoute();
+import { useRoute } from 'vue-router';
+import { ref, watch, computed } from 'vue';
 
-/*global ref*/
+const route = useRoute();
+/*global webSocket*/
+const { isOnline } = webSocket(true);
+
 const title = ref('Remo');
 const description = ref('Hardware Accelerated Remote Desktop');
 const lang = 'en';
 
 // Update title based on the route's meta
-/*global watch*/
 watch(route, () => {
   title.value = route.meta.title || 'Remo'; // Default to 'Remo' if not specified
   description.value =
@@ -23,14 +25,55 @@ useSeoMeta({
   description: description
 });
 
-/*global computed*/
 const showHeaderFooter = computed(() => {
   return !['index', 'stream'].includes(route.name);
+});
+
+// New: Track connection status
+const connectionStatus = ref('offline');
+const statusBackgroundColor = ref('bg-red-500');
+
+// New: Watch for changes in isOnline
+watch(isOnline, (newIsOnline) => {
+  if (newIsOnline) {
+    connectionStatus.value = 'connected';
+    statusBackgroundColor.value = 'bg-green-500';
+    // Trigger the transition to hide after a delay
+    setTimeout(() => {
+      connectionStatus.value = 'hide';
+    }, 1000); // Hide after 2 seconds
+  } else {
+    connectionStatus.value = 'offline';
+    statusBackgroundColor.value = 'bg-red-500';
+  }
 });
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col">
+    <transition
+      enter-active-class="transition-all duration-300 ease-in-out"
+      enter-from-class="opacity-0 -translate-y-full"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-300 ease-in-out"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-full"
+    >
+      <div
+        v-if="connectionStatus !== 'hide'"
+        :class="[
+          statusBackgroundColor,
+          'text-white p-2 text-center fixed top-0 left-0 right-0 z-50'
+        ]"
+      >
+        {{
+          connectionStatus === 'offline'
+            ? 'You are currently offline. Attempting to reconnect...'
+            : 'Connected'
+        }}
+      </div>
+    </transition>
+
     <Header v-if="showHeaderFooter" />
 
     <main class="flex-grow">
@@ -161,5 +204,8 @@ a {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+.transition-all {
+  transition-property: all;
 }
 </style>

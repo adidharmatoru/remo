@@ -94,8 +94,22 @@ export function webSocket(isGlobal = true) {
     });
   };
 
+  const handleVisibilityChange = () => {
+    if (!document.hidden && !isOnline.value) {
+      connect();
+    }
+  };
+
+  const handleOnline = () => {
+    connect();
+  };
+
   onMounted(() => {
     connect();
+
+    // Event listener
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   });
 
   onUnmounted(() => {
@@ -108,6 +122,10 @@ export function webSocket(isGlobal = true) {
     if (keepAliveInterval.value) {
       clearInterval(keepAliveInterval.value);
     }
+
+    // Event listener
+    window.removeEventListener('online', handleOnline);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   });
 
   return {

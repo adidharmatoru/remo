@@ -5,6 +5,41 @@
         Available Devices
       </h1>
 
+      <!-- Filters -->
+      <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <input
+          v-model="filters.name"
+          placeholder="Search by name"
+          class="rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default placeholder-fg-subtle focus:border-accent-emphasis focus:outline-none"
+          @input="applyFilters"
+        />
+        <select
+          v-model="filters.os"
+          class="rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none"
+          @change="applyFilters"
+        >
+          <option value="">All OS</option>
+          <option value="Windows">Windows</option>
+          <option value="macOS">macOS</option>
+          <option value="Linux">Linux</option>
+        </select>
+        <input
+          v-model="filters.version"
+          placeholder="Filter by version"
+          class="rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default placeholder-fg-subtle focus:border-accent-emphasis focus:outline-none"
+          @input="applyFilters"
+        />
+        <select
+          v-model="filters.control"
+          class="rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none"
+          @change="applyFilters"
+        >
+          <option value="">All Control</option>
+          <option :value="true">Enabled</option>
+          <option :value="false">Disabled</option>
+        </select>
+      </div>
+
       <!-- Device Grid -->
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <template v-if="isLoading">
@@ -81,14 +116,30 @@
               </div>
 
               <!-- Viewer Count -->
-              <div class="mt-2 flex items-center">
-                <Icon
-                  name="lucide:users"
-                  class="mr-1 h-4 w-4 text-high-contrast"
-                />
-                <span class="text-sm text-default"
-                  >{{ device.viewerCount }} connected</span
-                >
+              <div class="mt-2 flex items-center justify-between">
+                <div class="flex items-center">
+                  <Icon
+                    name="lucide:users"
+                    class="mr-1 h-4 w-4 text-high-contrast"
+                  />
+                  <span class="text-sm text-default"
+                    >{{ device.viewerCount }} connected</span
+                  >
+                </div>
+                <div class="flex items-center">
+                  <Icon
+                    :name="
+                      device.control
+                        ? 'lucide:toggle-right'
+                        : 'lucide:toggle-left'
+                    "
+                    class="mr-1 h-5 w-5"
+                    :class="
+                      device.control ? 'text-success-fg' : 'text-danger-fg'
+                    "
+                  />
+                  <span class="text-sm" :class="device.control"> Control </span>
+                </div>
               </div>
             </div>
 
@@ -122,12 +173,33 @@
           </div>
         </template>
       </div>
+
+      <!-- Pagination -->
+      <div class="mt-6 flex justify-center">
+        <button
+          @click="changePage(-1)"
+          :disabled="currentPage === 1"
+          class="mr-2 rounded-md bg-accent-emphasis px-4 py-2 text-white disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <span class="mx-4 flex items-center">
+          Page {{ currentPage }} of {{ totalPages }}
+        </span>
+        <button
+          @click="changePage(1)"
+          :disabled="currentPage === totalPages"
+          class="ml-2 rounded-md bg-accent-emphasis px-4 py-2 text-white disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -138,7 +210,23 @@ const { websocket, sendMessageOnConnection } = webSocket(false);
 // Reactive list of devices
 const devices = ref([]);
 const isLoading = ref(true);
-const loadingCardCount = ref(3);
+const perPage = ref(6);
+const currentPage = ref(1);
+const totalDevices = ref(0);
+const loadingCardCount = 3;
+
+// Filters
+const filters = ref({
+  name: '',
+  os: '',
+  version: '',
+  control: ''
+});
+
+// Computed property for total pages
+const totalPages = computed(() =>
+  Math.ceil(totalDevices.value / perPage.value)
+);
 
 // Mock devices data
 const mockDevices = [
@@ -148,7 +236,8 @@ const mockDevices = [
     os: 'macOS',
     version: '0.0.1',
     online: false,
-    viewerCount: 0
+    viewerCount: 0,
+    control: false
   },
   {
     id: 'TEST3',
@@ -156,7 +245,8 @@ const mockDevices = [
     os: 'Linux',
     version: '0.0.1b',
     online: false,
-    viewerCount: 0
+    viewerCount: 0,
+    control: true
   }
 ];
 
@@ -196,6 +286,7 @@ const populateDevices = (data) => {
     viewerCount: data[room].viewer_count,
     os: data[room].os,
     version: data[room].version,
+    control: data[room].control,
     online: true
   }));
 
@@ -204,10 +295,27 @@ const populateDevices = (data) => {
   isLoading.value = false;
 };
 
-const refreshDevices = () => {
-  setInterval(() => {
-    sendMessageOnConnection({ type: 'get_room_list' });
-  }, 5000);
+const applyFilters = () => {
+  currentPage.value = 1;
+  fetchDevices();
+};
+
+const changePage = (direction) => {
+  currentPage.value += direction;
+  fetchDevices();
+};
+
+const fetchDevices = () => {
+  isLoading.value = true;
+  sendMessageOnConnection({
+    type: 'get_room_list',
+    page: currentPage.value,
+    per_page: perPage.value,
+    name: filters.value.name || undefined,
+    os: filters.value.os || undefined,
+    version: filters.value.version || undefined,
+    control: filters.value.control === '' ? undefined : filters.value.control
+  });
 };
 
 onMounted(async () => {
@@ -216,16 +324,25 @@ onMounted(async () => {
     router.push('/');
   }
 
-  // Send the get_room_list message
-  await sendMessageOnConnection({ type: 'get_room_list' });
-  refreshDevices();
+  fetchDevices();
+
+  // Subscribe to room updates
+  await sendMessageOnConnection({ type: 'subscribe_room_updates' });
 
   // Listen for updates
   websocket.value.onmessage = (event) => {
     const signal = JSON.parse(event.data);
     if (signal.type === 'room_list_response') {
       populateDevices(signal.rooms);
+      totalDevices.value = signal.total_count || 0;
+    } else if (signal.type === 'new_room_notification') {
+      fetchDevices();
     }
   };
+});
+
+onUnmounted(() => {
+  // Unsubscribe from room updates
+  sendMessageOnConnection({ type: 'unsubscribe_room_updates' });
 });
 </script>

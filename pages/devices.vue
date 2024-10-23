@@ -6,38 +6,78 @@
       </h1>
 
       <!-- Filters -->
-      <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <input
-          v-model="filters.name"
-          placeholder="Search by name"
-          class="rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default placeholder-fg-subtle focus:border-accent-emphasis focus:outline-none"
-          @input="applyFilters"
-        />
-        <select
-          v-model="filters.os"
-          class="rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none"
-          @change="applyFilters"
-        >
-          <option value="">All OS</option>
-          <option value="Windows">Windows</option>
-          <option value="macOS">macOS</option>
-          <option value="Linux">Linux</option>
-        </select>
-        <input
-          v-model="filters.version"
-          placeholder="Filter by version"
-          class="rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default placeholder-fg-subtle focus:border-accent-emphasis focus:outline-none"
-          @input="applyFilters"
-        />
-        <select
-          v-model="filters.control"
-          class="rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none"
-          @change="applyFilters"
-        >
-          <option value="">All Control</option>
-          <option :value="true">Enabled</option>
-          <option :value="false">Disabled</option>
-        </select>
+      <div class="mb-8 rounded-lg bg-canvas-default p-6 shadow-sm">
+        <h2 class="mb-4 text-lg font-semibold text-high-contrast">Filters</h2>
+        <div class="space-y-4">
+          <!-- Full-width name filter -->
+          <div class="w-full">
+            <label
+              for="name-filter"
+              class="mb-1 block text-sm font-medium text-fg-default"
+              >Name</label
+            >
+            <input
+              id="name-filter"
+              v-model="filters.name"
+              placeholder="Search by name"
+              class="w-full rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default placeholder-fg-subtle focus:border-accent-emphasis focus:outline-none"
+              @input="applyFilters"
+            />
+          </div>
+
+          <!-- Other filters in one row -->
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label
+                for="os-filter"
+                class="mb-1 block text-sm font-medium text-fg-default"
+                >Operating System</label
+              >
+              <select
+                id="os-filter"
+                v-model="filters.os"
+                class="w-full rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none"
+                @change="applyFilters"
+              >
+                <option value="">All OS</option>
+                <option value="Windows">Windows</option>
+                <option value="macOS">macOS</option>
+                <option value="Linux">Linux</option>
+              </select>
+            </div>
+            <div>
+              <label
+                for="version-filter"
+                class="mb-1 block text-sm font-medium text-fg-default"
+                >Version</label
+              >
+              <input
+                id="version-filter"
+                v-model="filters.version"
+                placeholder="Filter by version"
+                class="w-full rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default placeholder-fg-subtle focus:border-accent-emphasis focus:outline-none"
+                @input="applyFilters"
+              />
+            </div>
+            <div>
+              <label
+                for="control-filter"
+                class="mb-1 block text-sm font-medium text-fg-default"
+                >Control</label
+              >
+              <select
+                id="control-filter"
+                v-model="filters.control"
+                class="w-full rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none"
+                @change="applyFilters"
+              >
+                <option value="">All Control</option>
+                <option :value="true">Enabled</option>
+                <option :value="false">Disabled</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Device Grid -->
@@ -126,19 +166,26 @@
                     >{{ device.viewerCount }} connected</span
                   >
                 </div>
-                <div class="flex items-center">
+                <div class="flex items-center space-x-2">
                   <Icon
                     :name="
                       device.control
-                        ? 'lucide:toggle-right'
-                        : 'lucide:toggle-left'
+                        ? 'heroicons:check-circle'
+                        : 'heroicons:x-circle'
                     "
-                    class="mr-1 h-5 w-5"
-                    :class="
-                      device.control ? 'text-success-fg' : 'text-danger-fg'
-                    "
+                    class="w-5 h-5"
+                    :class="device.control ? 'text-green-500' : 'text-red-500'"
                   />
-                  <span class="text-sm" :class="device.control"> Control </span>
+                  <span
+                    class="text-sm"
+                    :class="
+                      device.control
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-red-600 dark:text-red-400'
+                    "
+                  >
+                    Control
+                  </span>
                 </div>
               </div>
             </div>
@@ -179,7 +226,7 @@
         <button
           @click="changePage(-1)"
           :disabled="currentPage === 1"
-          class="mr-2 rounded-md bg-accent-emphasis px-4 py-2 text-white disabled:opacity-50"
+          class="mr-2 rounded-md bg-accent-emphasis px-4 py-2 disabled:opacity-50"
         >
           Previous
         </button>
@@ -189,7 +236,7 @@
         <button
           @click="changePage(1)"
           :disabled="currentPage === totalPages"
-          class="ml-2 rounded-md bg-accent-emphasis px-4 py-2 text-white disabled:opacity-50"
+          class="ml-2 rounded-md bg-accent-emphasis px-4 py-2 disabled:opacity-50"
         >
           Next
         </button>

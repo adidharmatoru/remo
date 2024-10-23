@@ -2,49 +2,54 @@ import { ref } from 'vue';
 
 export const keyboardControl = (eventChannel) => {
   const keyboardEnabled = ref(false);
+  // Store the handler functions as persistent references
+  const keydownHandler = handleKeyAction('key_down');
+  const keyupHandler = handleKeyAction('key_up');
 
-  const sendEventData = (data) => {
+  function sendEventData(data) {
     if (eventChannel.value && eventChannel.value.readyState === 'open') {
       eventChannel.value.send(JSON.stringify(data));
     } else {
       console.warn('Event channel not ready');
     }
-  };
+  }
 
-  const handleKeyAction = (action) => (event) => {
-    if (!keyboardEnabled.value) return;
-    event.preventDefault();
+  function handleKeyAction(action) {
+    return (event) => {
+      if (!keyboardEnabled.value) return;
+      event.preventDefault();
 
-    sendEventData({
-      type: action,
-      key: event.code
-    });
-  };
+      sendEventData({
+        type: action,
+        key: event.code
+      });
+    };
+  }
 
-  const toggleKeyboard = () => {
+  function toggleKeyboard() {
     keyboardEnabled.value = !keyboardEnabled.value;
     updateKeyboardListeners();
-  };
+  }
 
-  const updateKeyboardListeners = () => {
+  function updateKeyboardListeners() {
     if (keyboardEnabled.value) {
-      document.addEventListener('keydown', handleKeyAction('key_down'));
-      document.addEventListener('keyup', handleKeyAction('key_up'));
+      document.addEventListener('keydown', keydownHandler);
+      document.addEventListener('keyup', keyupHandler);
     } else {
-      document.removeEventListener('keydown', handleKeyAction('key_down'));
-      document.removeEventListener('keyup', handleKeyAction('key_up'));
+      document.removeEventListener('keydown', keydownHandler);
+      document.removeEventListener('keyup', keyupHandler);
     }
-  };
+  }
 
-  const cleanup = () => {
+  function cleanup() {
     keyboardEnabled.value = false;
-    updateKeyboardListeners();
-  };
+    document.removeEventListener('keydown', keydownHandler);
+    document.removeEventListener('keyup', keyupHandler);
+  }
 
   return {
     keyboardEnabled,
     toggleKeyboard,
-    updateKeyboardListeners,
     cleanup
   };
 };

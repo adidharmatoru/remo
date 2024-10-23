@@ -8,6 +8,7 @@ function iconName(theme) {
 <template>
   <button
     class="color-mode-picker"
+    aria-label="Color Mode Picker"
     @click="
       $colorMode.preference = $colorMode.value === 'light' ? 'dark' : 'light'
     "

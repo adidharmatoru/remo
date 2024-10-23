@@ -5,6 +5,7 @@
       <video
         ref="videoRef"
         class="h-full w-full object-contain"
+        tabindex="0"
         autoplay
         muted
         playsinline

@@ -103,9 +103,41 @@ export const mouseControl = (videoRef, eventChannel) => {
     updateMouseListeners();
   };
 
+  // Add pointer lock change and error event listeners
+  const handlePointerLockChange = () => {
+    isPointerLocked.value = document.pointerLockElement === videoRef.value;
+    if (!isPointerLocked.value) {
+      document.removeEventListener('mousemove', onMouseMove, false);
+    }
+  };
+
+  const handlePointerLockError = (error) => {
+    console.error('Pointer lock error:', error);
+    isPointerLocked.value = false;
+    // Fall back to regular mouse tracking
+    if (!mouseTrackEnabled.value) {
+      toggleMouseTrack();
+    }
+  };
+
+  const initPointerLockListeners = () => {
+    document.addEventListener('pointerlockchange', handlePointerLockChange);
+    document.addEventListener('pointerlockerror', handlePointerLockError);
+  };
+
+  const removePointerLockListeners = () => {
+    document.removeEventListener('pointerlockchange', handlePointerLockChange);
+    document.removeEventListener('pointerlockerror', handlePointerLockError);
+  };
+
   const toggleMouseLock = async () => {
     try {
       if (!isPointerLocked.value) {
+        // Ensure video element is ready
+        if (!videoRef.value || !videoRef.value.requestPointerLock) {
+          throw new Error('Video element not ready for pointer lock');
+        }
+
         await videoRef.value.requestPointerLock();
         document.addEventListener('mousemove', onMouseMove, false);
       } else {
@@ -114,6 +146,10 @@ export const mouseControl = (videoRef, eventChannel) => {
       }
     } catch (error) {
       console.error('Pointer lock toggle failed:', error);
+      // Fall back to regular mouse tracking
+      if (!mouseTrackEnabled.value) {
+        toggleMouseTrack();
+      }
     }
   };
 
@@ -126,12 +162,16 @@ export const mouseControl = (videoRef, eventChannel) => {
       videoRef.value.onmousemove = onVideoMouse('mouse_move');
       videoRef.value.onwheel = onVideoWheel;
       document.oncontextmenu = () => false;
+      // Initialize pointer lock listeners
+      initPointerLockListeners();
     } else {
       videoRef.value.onmouseup = null;
       videoRef.value.onmousedown = null;
       videoRef.value.onmousemove = null;
       videoRef.value.onwheel = null;
       document.oncontextmenu = null;
+      // Remove pointer lock listeners
+      removePointerLockListeners();
     }
   };
 
@@ -142,10 +182,14 @@ export const mouseControl = (videoRef, eventChannel) => {
     document.oncontextmenu = null;
     updateMouseListeners();
     document.removeEventListener('mousemove', onMouseMove);
+    removePointerLockListeners();
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
   };
+
+  // Initialize pointer lock listeners on creation
+  initPointerLockListeners();
 
   return {
     mouseEnabled,

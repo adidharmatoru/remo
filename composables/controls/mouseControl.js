@@ -188,6 +188,7 @@ export const mouseControl = (videoRef, eventChannel) => {
     }
   };
 
+  /*global onMounted*/
   onMounted(() => {
     // Initialize pointer lock listeners on mount
     initPointerLockListeners();

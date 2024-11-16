@@ -36,7 +36,7 @@
               <select
                 id="os-filter"
                 v-model="filters.os"
-                class="w-full rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none"
+                class="w-full rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none appearance-none"
                 @change="applyFilters"
               >
                 <option value="">All OS</option>
@@ -68,7 +68,7 @@
               <select
                 id="control-filter"
                 v-model="filters.control"
-                class="w-full rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none"
+                class="w-full rounded-md border border-border-default bg-canvas-default px-4 py-2 text-fg-default focus:border-accent-emphasis focus:outline-none appearance-none"
                 @change="applyFilters"
               >
                 <option value="">All Control</option>

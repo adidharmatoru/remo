@@ -15,7 +15,7 @@ export const mouseControl = (videoRef, eventChannel) => {
     }
   };
 
-  const toSharerCoordinate = (event) => {
+  const toCoordinate = (event) => {
     const video = videoRef.value;
     const rect = video.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
@@ -49,7 +49,7 @@ export const mouseControl = (videoRef, eventChannel) => {
     if (action === 'mouse_move' && !mouseTrackEnabled.value && !event.buttons)
       return;
 
-    const coords = toSharerCoordinate(event);
+    const coords = toCoordinate(event);
     const eventData = {
       type: action,
       ...coords,

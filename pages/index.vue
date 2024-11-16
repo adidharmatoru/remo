@@ -46,6 +46,14 @@
             <Icon name="heroicons:arrow-right" class="ml-2 h-5 w-5" />
           </NuxtLink>
 
+          <!-- Demo Button -->
+          <NuxtLink
+            to="/demo"
+            class="inline-flex items-center justify-center rounded-lg bg-color-primary px-8 text-xs text-white transition-all hover:bg-color-primary/90"
+          >
+            <span>Try the public demo now</span>
+          </NuxtLink>
+
           <!-- Credits Button -->
           <NuxtLink
             to="/credits"
@@ -78,6 +86,14 @@
               Start
             </button>
           </div>
+
+          <!-- Demo Button -->
+          <NuxtLink
+            to="/demo"
+            class="inline-flex items-center justify-center rounded-lg bg-color-primary px-8 text-xs text-white transition-all hover:bg-color-primary/90"
+          >
+            <span>Try the public demo now</span>
+          </NuxtLink>
 
           <!-- Credits Button -->
           <NuxtLink

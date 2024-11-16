@@ -12,7 +12,7 @@ const lang = 'en';
 
 // Update title based on the route's meta
 watch(route, () => {
-  title.value = route.meta.title || 'Remo'; // Default to 'Remo' if not specified
+  title.value = route.meta.title || 'Remo';
   description.value =
     route.meta.description || 'Hardware Accelerated Remote Desktop';
 });
@@ -29,11 +29,11 @@ const showHeaderFooter = computed(() => {
   return !['index', 'stream'].includes(route.name);
 });
 
-// New: Track connection status
+// Track connection status
 const connectionStatus = ref('offline');
 const statusBackgroundColor = ref('bg-red-500');
 
-// New: Watch for changes in isOnline
+// Watch for changes in isOnline
 watch(isOnline, (newIsOnline) => {
   if (newIsOnline) {
     connectionStatus.value = 'connected';
@@ -41,7 +41,7 @@ watch(isOnline, (newIsOnline) => {
     // Trigger the transition to hide after a delay
     setTimeout(() => {
       connectionStatus.value = 'hide';
-    }, 1000); // Hide after 2 seconds
+    }, 1000);
   } else {
     connectionStatus.value = 'offline';
     statusBackgroundColor.value = 'bg-red-500';
@@ -63,7 +63,8 @@ watch(isOnline, (newIsOnline) => {
         v-if="connectionStatus !== 'hide'"
         :class="[
           statusBackgroundColor,
-          'text-white p-2 text-center fixed top-0 left-0 right-0 z-50'
+          'text-white p-2 text-center fixed left-0 right-0 z-50',
+          { 'top-16': isHeaderVisible, 'top-0': !isHeaderVisible }
         ]"
       >
         {{

@@ -96,12 +96,12 @@ export function webSocket(isGlobal = true) {
 
   const handleVisibilityChange = () => {
     if (!document.hidden && !isOnline.value) {
-      connect();
+      reconnect();
     }
   };
 
   const handleOnline = () => {
-    connect();
+    reconnect();
   };
 
   onMounted(() => {

@@ -27,6 +27,14 @@
           >
             Credits & Roadmap
           </NuxtLink>
+          <NuxtLink
+            to="/demo"
+            class="text-default hover:text-high-contrast px-3 py-2"
+            :class="{ 'text-high-contrast': $route.path === '/demo' }"
+            active-class="text-high-contrast"
+          >
+            Demo
+          </NuxtLink>
         </nav>
       </div>
       <div class="flex items-center">
@@ -67,6 +75,14 @@
         >
           Credits & Roadmap
         </NuxtLink>
+        <NuxtLink
+          to="/demo"
+          class="text-default hover:text-high-contrast px-3 py-2"
+          :class="{ 'text-high-contrast': $route.path === '/demo' }"
+          active-class="text-high-contrast"
+        >
+          Demo
+        </NuxtLink>
       </nav>
     </div>
   </header>
@@ -87,8 +103,7 @@ const toggleMenu = () => {
 };
 
 const onScroll = () => {
-  const currentScrollPosition =
-    window.pageYOffset || document.documentElement.scrollTop;
+  const currentScrollPosition = document.documentElement.scrollTop;
 
   if (
     Math.abs(currentScrollPosition - lastScrollPosition.value) <

@@ -205,7 +205,7 @@ const technologies = [
     name: 'Windows Graphic Capture',
     icon: Cpu,
     description:
-      "Harnesses GPU capabilities for efficient video capture and encoding. <a href='https://github.com/robmikh/screenshot-rs'>screenshot-rs</a>, <a href='https://github.com/enigo-rs/enigo'>enigo</a>"
+      "Harnesses GPU capabilities for efficient video capture and encoding. <a href='https://github.com/robmikh/screenshot-rs'>screenshot-rs</a>, <a href='https://github.com/enigo-rs/enigo'>enigo</a>, <a href='https://www.ffmpeg.org/'>FFmpeg</a>"
   },
   {
     name: 'WebRTC',

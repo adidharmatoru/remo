@@ -248,7 +248,7 @@ import { ref } from 'vue';
 
 const showVideo = ref(false);
 const videoSrc = ref(
-  'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/watch.webm'
+  'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/demo.mov'
 );
 
 const features = [

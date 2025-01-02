@@ -217,6 +217,29 @@
       </div>
     </div>
 
+    <!-- Demos Section -->
+    <div class="mt-8 p-4">
+      <h2 class="mb-12 text-center text-4xl font-bold text-high-contrast">
+        Demos
+      </h2>
+      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-2">
+        <div
+          v-for="demo in demos"
+          :key="demo.title"
+          class="flex flex-col rounded-xl border border-border-default bg-canvas-default p-6 shadow-lg transition-transform hover:scale-1"
+        >
+          <h3 class="text-2xl font-semibold text-high-contrast">
+            {{ demo.title }}
+          </h3>
+          <p class="mt-2 flex-grow text-default">{{ demo.description }}</p>
+          <video class="mt-4 overflow-hidden rounded-lg" controls playsinline>
+            <source :src="demo.videoSrc" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+    </div>
+
     <!-- CTA Section -->
     <div class="container mx-auto px-4 sm:px-6 py-12 sm:py-20">
       <div
@@ -250,6 +273,33 @@ const showVideo = ref(false);
 const videoSrc = ref(
   'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/demo.mov'
 );
+
+const demos = [
+  {
+    title: 'Productivity',
+    description:
+      'Check out how the hardware-accelerated streaming makes remote work and learning a breeze!',
+    videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/code.mov'
+  },
+  {
+    title: 'Watch Party',
+    description:
+      'Join the fun with friends and enjoy and control live streams together, all with smooth performance!',
+    videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/watch.mov'
+  },
+  {
+    title: '3D / FPS Games',
+    description:
+      'Jump into the action and see Remo makes 3D and FPS gaming super smooth and interactive!',
+    videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/fps.mov'
+  },
+  {
+    title: 'MOBA / RTS Games',
+    description:
+      'Dive into the strategies of MOBAs and RTS games with minimal lag for an awesome experience!',
+    videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/moba.mov'
+  }
+];
 
 const features = [
   {

@@ -1,6 +1,7 @@
 {
   "name": "remo",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "build": "nuxt build",
@@ -11,7 +12,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --end-of-line auto --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
@@ -27,6 +29,7 @@
   "devDependencies": {
     "@eslint/js": "^9.12.0",
     "@nuxt/test-utils": "^3.14.3",
+    "@vitest/coverage-v8": "^2.1.8",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.12.0",
     "eslint-config-prettier": "^9.1.0",
@@ -36,6 +39,6 @@
     "happy-dom": "^15.7.4",
     "playwright-core": "^1.48.0",
     "prettier": "^3.3.3",
-    "vitest": "^2.1.2"
+    "vitest": "^2.1.8"
   }
 }

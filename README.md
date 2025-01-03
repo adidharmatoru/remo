@@ -1,6 +1,6 @@
 # Remo - Hardware-Accelerated Remote Desktop
 
-[![Deploy](https://github.com/adidharmatoru/remo/actions/workflows/deploy.yml/badge.svg)](https://github.com/adidharmatoru/remo/actions/workflows/deploy.yml)
+[![CICD](https://github.com/adidharmatoru/remo/actions/workflows/cicd.yml/badge.svg)](https://github.com/adidharmatoru/remo/actions/workflows/cicd.yml)
 [![codecov](https://codecov.io/gh/adidharmatoru/remo/branch/master/graph/badge.svg)](https://codecov.io/gh/adidharmatoru/remo)
 
 Remo is a hardware-accelerated remote desktop solution built with Rust and Nuxt 3. This repository contains the front-end application that provides a seamless user interface.

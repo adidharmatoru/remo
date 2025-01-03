@@ -1,4 +1,4 @@
-name: Deploy
+name: CICD
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       - master
 
 jobs:
-  lint-and-test:
+  Continous-Integration:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -39,9 +39,9 @@ jobs:
           slug: adidharmatoru/Remo
           fail_ci_if_error: true
 
-  build-and-deploy:
+  Continous-Development:
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: Continous-Integration
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

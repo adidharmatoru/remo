@@ -15,12 +15,7 @@ export const joystickControl = (eventChannel) => {
     userId = userData?.id;
   } catch (error) {
     console.error(error);
-    const uuid = uuidv4();
-    const userData = {
-      name: uuid,
-      id: uuid
-    };
-    localStorage.setItem('userData', JSON.stringify(userData));
+    userId = uuidv4();
   }
 
   function sendEventData(data) {

@@ -191,6 +191,20 @@
           <Icon :name="isPointerLocked ? 'lucide:lock' : 'lucide:unlock'" />
         </button>
 
+        <!-- Joystick Lock Toggle -->
+        <div class="floating-menu-divider" />
+        <button
+          class="menu-item"
+          title="Toggle Joystick"
+          :class="joystickEnabled ? 'text-primary-500' : ''"
+          @click="toggleJoystick"
+          tabindex="-1"
+        >
+          <Icon
+            :name="joystickEnabled ? 'lucide:gamepad-2' : 'lucide:gamepad'"
+          />
+        </button>
+
         <!-- Disconnect Button -->
         <div class="floating-menu-divider" />
         <button
@@ -203,6 +217,13 @@
         </button>
       </template>
     </FloatingMenu>
+
+    <!-- Virtual Joystick -->
+    <VirtualJoystick
+      :enabled="joystickEnabled"
+      :has-physical-gamepad="hasPhysicalGamepad"
+      :on-state-change="handleJoystickState"
+    />
   </div>
 </template>
 
@@ -216,6 +237,8 @@ import {
   TransitionChild,
   TransitionRoot
 } from '@headlessui/vue';
+import VirtualJoystick from '../components/VirtualJoystick.vue';
+import { joystickControl } from '../composables/controls/joystickControl';
 
 const router = useRouter();
 const route = useRoute();
@@ -284,6 +307,15 @@ const {
   toggleKeyboard,
   cleanup: cleanupKeyboard
 } = keyboardControl(eventChannel);
+
+// Initialize joystick controls
+const {
+  joystickEnabled,
+  hasPhysicalGamepad,
+  toggleJoystick,
+  handleJoystickState,
+  cleanup: cleanupJoystick
+} = joystickControl(eventChannel);
 
 // Watch for eventChannel changes
 /*global watch*/
@@ -376,6 +408,7 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupMouse();
   cleanupKeyboard();
+  cleanupJoystick();
   cleanupVideo();
   cleanupAudio();
   disconnect();

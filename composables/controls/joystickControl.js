@@ -80,8 +80,8 @@ export const joystickControl = (eventChannel) => {
       left_stick_y: Math.round(-applyDeadzone(gamepad.axes[1]) * 32767),
       right_stick_x: Math.round(applyDeadzone(gamepad.axes[2]) * 32767),
       right_stick_y: Math.round(-applyDeadzone(gamepad.axes[3]) * 32767),
-      left_trigger: Math.round(gamepad.buttons[6]?.value * 32767),
-      right_trigger: Math.round(gamepad.buttons[7]?.value * 32767)
+      left_trigger: Math.round(gamepad.buttons[6]?.value * 255),
+      right_trigger: Math.round(gamepad.buttons[7]?.value * 255)
     };
 
     // Process buttons with threshold

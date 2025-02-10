@@ -42,3 +42,6 @@ global.WebSocket = vi.fn(() => ({
   OPEN: 1,
   CLOSED: 3
 }));
+
+// Add to existing setup.js
+global.navigator.getGamepads = vi.fn().mockReturnValue([]);

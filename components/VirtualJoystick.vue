@@ -263,12 +263,7 @@ const triggerValues = ref({
   rt: 0
 });
 
-const controlSize = computed(() => {
-  // Base size on viewport width, with minimum and maximum sizes
-  const baseSize = Math.min(window.innerWidth * 0.15, 120);
-  return Math.max(80, baseSize);
-});
-
+const controlSize = ref(100); // Default value
 const buttonSize = computed(() => controlSize.value / 2);
 const smallButtonSize = computed(() => controlSize.value / 3);
 
@@ -482,6 +477,7 @@ function stopDrag(side) {
 
 onMounted(() => {
   window.addEventListener('resize', handleResize);
+  handleResize(); // Initial size calculation
 });
 
 onUnmounted(() => {
@@ -491,8 +487,9 @@ onUnmounted(() => {
 });
 
 function handleResize() {
-  // Force recomputation of controlSize
-  controlSize.value = Math.max(80, Math.min(window.innerWidth * 0.15, 120));
+  // Base size on viewport width, with minimum and maximum sizes
+  const baseSize = Math.min(window.innerWidth * 0.15, 120);
+  controlSize.value = Math.max(80, baseSize);
 }
 
 // Optional: Watch for hasPhysicalGamepad changes to debug
@@ -549,8 +546,8 @@ watch(
 
 .joystick {
   position: relative;
-  width: v-bind(controlSize + 'px');
-  height: v-bind(controlSize + 'px');
+  width: v-bind('controlSize + "px"');
+  height: v-bind('controlSize + "px"');
   background: rgba(0, 0, 0, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
@@ -558,8 +555,8 @@ watch(
 }
 
 .joystick-button {
-  width: v-bind(buttonSize + 'px');
-  height: v-bind(buttonSize + 'px');
+  width: v-bind('buttonSize + "px"');
+  height: v-bind('buttonSize + "px"');
   background: rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   position: absolute;
@@ -571,14 +568,14 @@ watch(
 
 .dpad {
   position: relative;
-  width: v-bind(controlSize + 'px');
-  height: v-bind(controlSize + 'px');
+  width: v-bind('controlSize + "px"');
+  height: v-bind('controlSize + "px"');
 }
 
 .dpad-button {
   position: absolute;
-  width: v-bind(smallButtonSize + 'px');
-  height: v-bind(smallButtonSize + 'px');
+  width: v-bind('smallButtonSize + "px"');
+  height: v-bind('smallButtonSize + "px"');
   background: rgba(255, 255, 255, 0.8);
   border: none;
   border-radius: 5px;
@@ -586,37 +583,37 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: v-bind(smallButtonSize / 2 + 'px');
+  font-size: v-bind('smallButtonSize / 2 + "px"');
   color: rgba(0, 0, 0, 0.8);
 }
 
 .dpad-button.up {
   top: 0;
-  left: v-bind(smallButtonSize + 'px');
+  left: v-bind('smallButtonSize + "px"');
 }
 .dpad-button.right {
-  top: v-bind(smallButtonSize + 'px');
+  top: v-bind('smallButtonSize + "px"');
   right: 0;
 }
 .dpad-button.down {
   bottom: 0;
-  left: v-bind(smallButtonSize + 'px');
+  left: v-bind('smallButtonSize + "px"');
 }
 .dpad-button.left {
-  top: v-bind(smallButtonSize + 'px');
+  top: v-bind('smallButtonSize + "px"');
   left: 0;
 }
 
 .face-buttons {
   position: relative;
-  width: v-bind(controlSize + 'px');
-  height: v-bind(controlSize + 'px');
+  width: v-bind('controlSize + "px"');
+  height: v-bind('controlSize + "px"');
 }
 
 .face-button {
   position: absolute;
-  width: v-bind(smallButtonSize + 'px');
-  height: v-bind(smallButtonSize + 'px');
+  width: v-bind('smallButtonSize + "px"');
+  height: v-bind('smallButtonSize + "px"');
   background: rgba(255, 255, 255, 0.8);
   border: none;
   border-radius: 50%;
@@ -626,33 +623,34 @@ watch(
   justify-content: center;
   font-weight: bold;
   color: rgba(0, 0, 0, 0.8);
-  font-size: v-bind(smallButtonSize / 2 + 'px');
+  font-size: v-bind('smallButtonSize / 2 + "px"');
 }
 
 .face-button.y {
   top: 0;
-  left: v-bind(smallButtonSize + 'px');
+  left: v-bind('smallButtonSize + "px"');
 }
 .face-button.x {
-  top: v-bind(smallButtonSize + 'px');
+  top: v-bind('smallButtonSize + "px"');
   left: 0;
 }
 .face-button.b {
-  top: v-bind(smallButtonSize + 'px');
+  top: v-bind('smallButtonSize + "px"');
   right: 0;
 }
 .face-button.a {
   bottom: 0;
-  left: v-bind(smallButtonSize + 'px');
+  left: v-bind('smallButtonSize + "px"');
 }
 
 .system-button {
-  padding: v-bind(smallButtonSize / 4 + 'px') v-bind(smallButtonSize / 2 + 'px');
+  padding: v-bind('smallButtonSize / 4 + "px"')
+    v-bind('smallButtonSize / 2 + "px"');
   background: rgba(255, 255, 255, 0.8);
   border: none;
   border-radius: 15px;
   cursor: pointer;
-  font-size: v-bind(smallButtonSize / 3 + 'px');
+  font-size: v-bind('smallButtonSize / 3 + "px"');
   color: rgba(0, 0, 0, 0.8);
 }
 
@@ -663,7 +661,7 @@ button:active {
 
 .trigger-container {
   position: relative;
-  width: v-bind(controlSize / 2 + 'px');
+  width: v-bind('controlSize / 2 + "px"');
   margin-bottom: 10px;
   display: flex;
   flex-direction: column;

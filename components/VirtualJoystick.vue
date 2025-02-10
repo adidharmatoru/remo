@@ -26,7 +26,7 @@
 
       <!-- Left Bumper -->
       <button
-        class="bumper left-bumper"
+        class="bumper-button"
         @mousedown="updateButton('lb', true)"
         @mouseup="updateButton('lb', false)"
         @touchstart="updateButton('lb', true)"
@@ -106,7 +106,7 @@
 
       <!-- Right Bumper -->
       <button
-        class="bumper right-bumper"
+        class="bumper-button"
         @mousedown="updateButton('rb', true)"
         @mouseup="updateButton('rb', false)"
         @touchstart="updateButton('rb', true)"
@@ -487,9 +487,10 @@ onUnmounted(() => {
 });
 
 function handleResize() {
-  // Base size on viewport width, with minimum and maximum sizes
-  const baseSize = Math.min(window.innerWidth * 0.15, 120);
-  controlSize.value = Math.max(80, baseSize);
+  // Base size on viewport width and height for better landscape support
+  const baseWidth = Math.min(window.innerWidth * 0.15, 120);
+  const baseHeight = Math.min(window.innerHeight * 0.25, 120);
+  controlSize.value = Math.max(60, Math.min(baseWidth, baseHeight));
 }
 
 // Optional: Watch for hasPhysicalGamepad changes to debug
@@ -504,13 +505,13 @@ watch(
 <style scoped>
 .virtual-joystick-container {
   position: fixed;
-  bottom: 20px;
+  bottom: 10px;
   left: 0;
   right: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 20px;
+  padding: 10px;
   pointer-events: none;
   z-index: 1000;
 }
@@ -518,7 +519,7 @@ watch(
 .controls-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
   pointer-events: auto;
 }
 
@@ -541,7 +542,7 @@ watch(
   display: flex;
   gap: 10px;
   pointer-events: auto;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .joystick {
@@ -551,7 +552,7 @@ watch(
   background: rgba(0, 0, 0, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  margin: 10px 0;
+  margin: 5px 0;
 }
 
 .joystick-button {
@@ -654,6 +655,18 @@ watch(
   color: rgba(0, 0, 0, 0.8);
 }
 
+.bumper-button {
+  width: v-bind('controlSize / 2 + "px"');
+  height: v-bind('smallButtonSize + "px"');
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: v-bind('smallButtonSize / 2 + "px"');
+  color: rgba(0, 0, 0, 0.8);
+  margin: 5px 0;
+}
+
 button:active {
   background: rgba(255, 255, 255, 0.9);
   transform: scale(0.95);
@@ -661,8 +674,8 @@ button:active {
 
 .trigger-container {
   position: relative;
-  width: v-bind('controlSize / 2 + "px"');
-  margin-bottom: 10px;
+  width: v-bind('controlSize / 1.5 + "px"');
+  margin-bottom: 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -670,7 +683,7 @@ button:active {
 
 .trigger {
   width: 100%;
-  height: 30px;
+  height: v-bind('smallButtonSize + "px"');
   -webkit-appearance: none;
   appearance: none;
   background: rgba(0, 0, 0, 0.3);
@@ -678,21 +691,22 @@ button:active {
   border-radius: 15px;
   outline: none;
   cursor: pointer;
+  touch-action: none;
 }
 
 .trigger::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 30px;
+  width: v-bind('smallButtonSize / 1.5 + "px"');
+  height: v-bind('smallButtonSize + "px"');
   background: rgba(255, 255, 255, 0.8);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .trigger::-moz-range-thumb {
-  width: 20px;
-  height: 30px;
+  width: v-bind('smallButtonSize / 1.5 + "px"');
+  height: v-bind('smallButtonSize + "px"');
   background: rgba(255, 255, 255, 0.8);
   border-radius: 8px;
   cursor: pointer;
@@ -700,8 +714,8 @@ button:active {
 }
 
 .trigger-label {
-  font-size: 12px;
+  font-size: v-bind('smallButtonSize / 3 + "px"');
   color: rgba(255, 255, 255, 0.8);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 </style>

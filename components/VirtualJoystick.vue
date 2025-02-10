@@ -9,15 +9,20 @@
     <!-- Left Side Controls -->
     <div class="controls-section left-controls">
       <!-- Left Trigger -->
-      <button
-        class="trigger left-trigger"
-        @mousedown="updateButton('lt', true)"
-        @mouseup="updateButton('lt', false)"
-        @touchstart="updateButton('lt', true)"
-        @touchend="updateButton('lt', false)"
-      >
-        LT
-      </button>
+      <div class="trigger-container">
+        <input
+          type="range"
+          class="trigger left-trigger"
+          min="0"
+          max="255"
+          :value="triggerValues.lt"
+          @input="updateTrigger('lt', $event)"
+          @touchstart.stop
+          @touchmove.stop
+          @touchend.stop
+        />
+        <span class="trigger-label">LT</span>
+      </div>
 
       <!-- Left Bumper -->
       <button
@@ -35,8 +40,8 @@
         <div
           class="joystick-button"
           :style="leftJoystickStyle"
-          @mousedown="startDrag('left')"
-          @touchstart="startDrag('left')"
+          @mousedown="startDrag('left', $event)"
+          @touchstart="startDrag('left', $event)"
         ></div>
       </div>
 
@@ -84,15 +89,20 @@
     <!-- Right Side Controls -->
     <div class="controls-section right-controls">
       <!-- Right Trigger -->
-      <button
-        class="trigger right-trigger"
-        @mousedown="updateButton('rt', true)"
-        @mouseup="updateButton('rt', false)"
-        @touchstart="updateButton('rt', true)"
-        @touchend="updateButton('rt', false)"
-      >
-        RT
-      </button>
+      <div class="trigger-container">
+        <input
+          type="range"
+          class="trigger right-trigger"
+          min="0"
+          max="255"
+          :value="triggerValues.rt"
+          @input="updateTrigger('rt', $event)"
+          @touchstart.stop
+          @touchmove.stop
+          @touchend.stop
+        />
+        <span class="trigger-label">RT</span>
+      </div>
 
       <!-- Right Bumper -->
       <button
@@ -150,8 +160,8 @@
         <div
           class="joystick-button"
           :style="rightJoystickStyle"
-          @mousedown="startDrag('right')"
-          @touchstart="startDrag('right')"
+          @mousedown="startDrag('right', $event)"
+          @touchstart="startDrag('right', $event)"
         ></div>
       </div>
     </div>
@@ -190,7 +200,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, computed, watch } from 'vue';
+import { ref, onUnmounted, computed, watch, onMounted } from 'vue';
 
 const props = defineProps({
   enabled: {
@@ -213,7 +223,8 @@ const props = defineProps({
 
 const leftJoystickRef = ref(null);
 const rightJoystickRef = ref(null);
-const activeDrag = ref(null);
+const leftDragIdentifier = ref(null);
+const rightDragIdentifier = ref(null);
 const leftPosition = ref({ x: 0, y: 0 });
 const rightPosition = ref({ x: 0, y: 0 });
 const buttons = ref({
@@ -247,6 +258,20 @@ const rightJoystickStyle = computed(() => ({
 // Track all currently pressed buttons
 const pressedButtons = ref(new Set());
 
+const triggerValues = ref({
+  lt: 0,
+  rt: 0
+});
+
+const controlSize = computed(() => {
+  // Base size on viewport width, with minimum and maximum sizes
+  const baseSize = Math.min(window.innerWidth * 0.15, 120);
+  return Math.max(80, baseSize);
+});
+
+const buttonSize = computed(() => controlSize.value / 2);
+const smallButtonSize = computed(() => controlSize.value / 3);
+
 function updateButton(button, pressed) {
   if (pressed) {
     pressedButtons.value.add(button);
@@ -263,15 +288,28 @@ function updateButton(button, pressed) {
   emitState(buttonState);
 }
 
+function updateTrigger(trigger, event) {
+  triggerValues.value[trigger] = parseInt(event.target.value);
+  emitState();
+}
+
 function emitState(buttonState = null) {
   const state = {
     axes: {
-      left_stick_x: Math.round((leftPosition.value.x / (120 / 2)) * 32767),
-      left_stick_y: Math.round((-leftPosition.value.y / (120 / 2)) * 32767),
-      right_stick_x: Math.round((rightPosition.value.x / (120 / 2)) * 32767),
-      right_stick_y: Math.round((-rightPosition.value.y / (120 / 2)) * 32767),
-      left_trigger: pressedButtons.value.has('lt') ? 32767 : 0,
-      right_trigger: pressedButtons.value.has('rt') ? 32767 : 0
+      left_stick_x: Math.round(
+        (leftPosition.value.x / (controlSize.value / 2)) * 32767
+      ),
+      left_stick_y: Math.round(
+        (-leftPosition.value.y / (controlSize.value / 2)) * 32767
+      ),
+      right_stick_x: Math.round(
+        (rightPosition.value.x / (controlSize.value / 2)) * 32767
+      ),
+      right_stick_y: Math.round(
+        (-rightPosition.value.y / (controlSize.value / 2)) * 32767
+      ),
+      left_trigger: triggerValues.value.lt,
+      right_trigger: triggerValues.value.rt
     },
     buttons:
       buttonState ||
@@ -285,30 +323,93 @@ function emitState(buttonState = null) {
   props.onStateChange(state);
 }
 
-function startDrag(side) {
-  activeDrag.value = side;
-  document.addEventListener('mousemove', handleDrag);
-  document.addEventListener('mouseup', stopDrag);
-  document.addEventListener('touchmove', handleDrag);
-  document.addEventListener('touchend', stopDrag);
+function startDrag(side, event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (event.type === 'mousedown') {
+    const identifier = 'mouse-' + side;
+    if (side === 'left') {
+      leftDragIdentifier.value = identifier;
+    } else {
+      rightDragIdentifier.value = identifier;
+    }
+
+    const handleMouseMove = (e) => handleDrag(e, identifier);
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      stopDrag(side);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  } else if (event.type === 'touchstart') {
+    // Find the specific touch that started this drag
+    const touch = Array.from(event.touches).find((t) => {
+      const rect =
+        side === 'left'
+          ? leftJoystickRef.value.getBoundingClientRect()
+          : rightJoystickRef.value.getBoundingClientRect();
+
+      return isPointInRect(t.clientX, t.clientY, rect);
+    });
+
+    if (touch) {
+      if (side === 'left') {
+        leftDragIdentifier.value = touch.identifier;
+      } else {
+        rightDragIdentifier.value = touch.identifier;
+      }
+    }
+
+    if (!document.touchListenersAdded) {
+      document.addEventListener('touchmove', handleTouchDrag, {
+        passive: false
+      });
+      document.addEventListener('touchend', handleTouchEnd);
+      document.addEventListener('touchcancel', handleTouchEnd);
+      document.touchListenersAdded = true;
+    }
+  }
 }
 
-function handleDrag(event) {
-  if (!activeDrag.value) return;
+// Add helper function to check if a point is within a rectangle
+function isPointInRect(x, y, rect) {
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
 
-  const joystickRef =
-    activeDrag.value === 'left'
-      ? leftJoystickRef.value
-      : rightJoystickRef.value;
-  const rect = joystickRef.getBoundingClientRect();
+// Update handleTouchDrag to handle touches independently
+function handleTouchDrag(event) {
+  event.preventDefault();
+
+  const touches = Array.from(event.touches);
+
+  // Handle left joystick
+  const leftTouch = touches.find(
+    (t) => t.identifier === leftDragIdentifier.value
+  );
+  if (leftTouch && leftJoystickRef.value) {
+    const rect = leftJoystickRef.value.getBoundingClientRect();
+    updateJoystickPosition('left', leftTouch, rect);
+  }
+
+  // Handle right joystick independently
+  const rightTouch = touches.find(
+    (t) => t.identifier === rightDragIdentifier.value
+  );
+  if (rightTouch && rightJoystickRef.value) {
+    const rect = rightJoystickRef.value.getBoundingClientRect();
+    updateJoystickPosition('right', rightTouch, rect);
+  }
+}
+
+function updateJoystickPosition(side, touch, rect) {
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
 
-  const clientX = event.touches ? event.touches[0].clientX : event.clientX;
-  const clientY = event.touches ? event.touches[0].clientY : event.clientY;
-
-  let deltaX = clientX - centerX;
-  let deltaY = clientY - centerY;
+  let deltaX = touch.clientX - centerX;
+  let deltaY = touch.clientY - centerY;
 
   // Limit the joystick movement to a circle
   const radius = rect.width / 2;
@@ -319,7 +420,7 @@ function handleDrag(event) {
     deltaY = Math.sin(angle) * radius;
   }
 
-  if (activeDrag.value === 'left') {
+  if (side === 'left') {
     leftPosition.value = { x: deltaX, y: deltaY };
   } else {
     rightPosition.value = { x: deltaX, y: deltaY };
@@ -328,28 +429,71 @@ function handleDrag(event) {
   emitState();
 }
 
-function stopDrag() {
-  if (!activeDrag.value) return;
+function handleDrag(event, identifier) {
+  const clientX = event.clientX || event.pageX;
+  const clientY = event.clientY || event.pageY;
+  const touch = { clientX, clientY };
 
-  if (activeDrag.value === 'left') {
-    leftPosition.value = { x: 0, y: 0 };
-  } else {
-    rightPosition.value = { x: 0, y: 0 };
+  if (identifier === leftDragIdentifier.value) {
+    const rect = leftJoystickRef.value.getBoundingClientRect();
+    updateJoystickPosition('left', touch, rect);
   }
 
-  activeDrag.value = null;
-  document.removeEventListener('mousemove', handleDrag);
-  document.removeEventListener('mouseup', stopDrag);
-  document.removeEventListener('touchmove', handleDrag);
-  document.removeEventListener('touchend', stopDrag);
+  if (identifier === rightDragIdentifier.value) {
+    const rect = rightJoystickRef.value.getBoundingClientRect();
+    updateJoystickPosition('right', touch, rect);
+  }
+}
 
+// Update handleTouchEnd to handle each joystick independently
+function handleTouchEnd(event) {
+  const changedTouches = Array.from(event.changedTouches);
+
+  // Check each ended touch
+  changedTouches.forEach((touch) => {
+    if (touch.identifier === leftDragIdentifier.value) {
+      stopDrag('left');
+    }
+    if (touch.identifier === rightDragIdentifier.value) {
+      stopDrag('right');
+    }
+  });
+
+  // Only remove listeners if all touches are gone
+  if (event.touches.length === 0) {
+    document.removeEventListener('touchmove', handleTouchDrag);
+    document.removeEventListener('touchend', handleTouchEnd);
+    document.removeEventListener('touchcancel', handleTouchEnd);
+    document.touchListenersAdded = false;
+  }
+}
+
+// Update stopDrag to be more specific about which joystick to reset
+function stopDrag(side) {
+  if (side === 'left') {
+    leftPosition.value = { x: 0, y: 0 };
+    leftDragIdentifier.value = null;
+  } else if (side === 'right') {
+    rightPosition.value = { x: 0, y: 0 };
+    rightDragIdentifier.value = null;
+  }
   emitState();
 }
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
 
 onUnmounted(() => {
   stopDrag();
   pressedButtons.value.clear();
+  window.removeEventListener('resize', handleResize);
 });
+
+function handleResize() {
+  // Force recomputation of controlSize
+  controlSize.value = Math.max(80, Math.min(window.innerWidth * 0.15, 120));
+}
 
 // Optional: Watch for hasPhysicalGamepad changes to debug
 watch(
@@ -405,8 +549,8 @@ watch(
 
 .joystick {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: v-bind(controlSize + 'px');
+  height: v-bind(controlSize + 'px');
   background: rgba(0, 0, 0, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
@@ -414,8 +558,8 @@ watch(
 }
 
 .joystick-button {
-  width: 60px;
-  height: 60px;
+  width: v-bind(buttonSize + 'px');
+  height: v-bind(buttonSize + 'px');
   background: rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   position: absolute;
@@ -427,14 +571,14 @@ watch(
 
 .dpad {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: v-bind(controlSize + 'px');
+  height: v-bind(controlSize + 'px');
 }
 
 .dpad-button {
   position: absolute;
-  width: 40px;
-  height: 40px;
+  width: v-bind(smallButtonSize + 'px');
+  height: v-bind(smallButtonSize + 'px');
   background: rgba(255, 255, 255, 0.8);
   border: none;
   border-radius: 5px;
@@ -442,37 +586,37 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: v-bind(smallButtonSize / 2 + 'px');
   color: rgba(0, 0, 0, 0.8);
 }
 
 .dpad-button.up {
   top: 0;
-  left: 40px;
+  left: v-bind(smallButtonSize + 'px');
 }
 .dpad-button.right {
-  top: 40px;
+  top: v-bind(smallButtonSize + 'px');
   right: 0;
 }
 .dpad-button.down {
   bottom: 0;
-  left: 40px;
+  left: v-bind(smallButtonSize + 'px');
 }
 .dpad-button.left {
-  top: 40px;
+  top: v-bind(smallButtonSize + 'px');
   left: 0;
 }
 
 .face-buttons {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: v-bind(controlSize + 'px');
+  height: v-bind(controlSize + 'px');
 }
 
 .face-button {
   position: absolute;
-  width: 40px;
-  height: 40px;
+  width: v-bind(smallButtonSize + 'px');
+  height: v-bind(smallButtonSize + 'px');
   background: rgba(255, 255, 255, 0.8);
   border: none;
   border-radius: 50%;
@@ -482,32 +626,33 @@ watch(
   justify-content: center;
   font-weight: bold;
   color: rgba(0, 0, 0, 0.8);
+  font-size: v-bind(smallButtonSize / 2 + 'px');
 }
 
 .face-button.y {
   top: 0;
-  left: 40px;
+  left: v-bind(smallButtonSize + 'px');
 }
 .face-button.x {
-  top: 40px;
+  top: v-bind(smallButtonSize + 'px');
   left: 0;
 }
 .face-button.b {
-  top: 40px;
+  top: v-bind(smallButtonSize + 'px');
   right: 0;
 }
 .face-button.a {
   bottom: 0;
-  left: 40px;
+  left: v-bind(smallButtonSize + 'px');
 }
 
 .system-button {
-  padding: 8px 16px;
+  padding: v-bind(smallButtonSize / 4 + 'px') v-bind(smallButtonSize / 2 + 'px');
   background: rgba(255, 255, 255, 0.8);
   border: none;
   border-radius: 15px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: v-bind(smallButtonSize / 3 + 'px');
   color: rgba(0, 0, 0, 0.8);
 }
 
@@ -516,33 +661,49 @@ button:active {
   transform: scale(0.95);
 }
 
-.trigger {
-  width: 60px;
-  height: 30px;
-  background: rgba(255, 255, 255, 0.8);
-  border: none;
-  border-radius: 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  color: rgba(0, 0, 0, 0.8);
+.trigger-container {
+  position: relative;
+  width: v-bind(controlSize / 2 + 'px');
   margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.bumper {
-  width: 80px;
-  height: 25px;
-  background: rgba(255, 255, 255, 0.8);
-  border: none;
-  border-radius: 12px;
+.trigger {
+  width: 100%;
+  height: 30px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  outline: none;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  color: rgba(0, 0, 0, 0.8);
-  margin-bottom: 15px;
+}
+
+.trigger::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.trigger::-moz-range-thumb {
+  width: 20px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+.trigger-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 4px;
 }
 </style>

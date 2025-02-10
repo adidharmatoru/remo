@@ -155,7 +155,7 @@ const technologies = [
     name: 'Windows Graphic Capture',
     icon: Cpu,
     description:
-      "Harnesses GPU capabilities for efficient video capture and encoding. <a href='https://github.com/robmikh/screenshot-rs'>screenshot-rs</a>, <a href='https://github.com/enigo-rs/enigo'>enigo</a>, <a href='https://www.ffmpeg.org/'>FFmpeg</a>"
+      "Harnesses GPU capabilities for efficient video capture and encoding. <a href='https://github.com/robmikh/screenshot-rs'>screenshot-rs</a>, <a href='https://github.com/enigo-rs/enigo'>enigo</a>, <a href='https://www.ffmpeg.org/'>FFmpeg</a>, <a href='https://vigembusdriver.com/'>ViGEmBus</a>"
   },
   {
     name: 'WebRTC',
@@ -211,7 +211,7 @@ const milestones = [
   },
   {
     date: 'Q4 2024 ~ Q1 2025',
-    status: 'In Progress',
+    status: 'Completed',
     title: 'Enhanced Demo Functionality',
     description: 'Introduction of new features and improvements.',
     features: [
@@ -221,19 +221,24 @@ const milestones = [
         icon: Joystick
       },
       {
-        name: 'Multi Monitor Support',
-        description: 'Switch monitor at ease',
-        icon: Monitor
+        name: 'Virtual Joystick Support',
+        description: 'Play with joystick without joycon',
+        icon: Joystick
       }
     ]
   },
   {
     date: 'Q2 2025 ~ Q3 2025',
-    status: 'Planned',
+    status: 'In Progress',
     title: 'Alpha Public Release',
     description:
       'Launch of first release (portable executable file) for public test.',
     features: [
+      {
+        name: 'Support latest HEVC H.265 encoding',
+        description: 'Add latest support for the HEVC encoding',
+        icon: Monitor
+      },
       {
         name: "Early <a href='https://quic.video/'>Media Over QUIC</a> R&D?",
         description:

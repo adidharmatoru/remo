@@ -36,12 +36,15 @@
       </button>
 
       <!-- Left Joystick -->
-      <div class="joystick left-joystick" ref="leftJoystickRef">
+      <div 
+        class="joystick left-joystick" 
+        ref="leftJoystickRef"
+        @mousedown="startDrag('left', $event)"
+        @touchstart="startDrag('left', $event)"
+      >
         <div
           class="joystick-button"
           :style="leftJoystickStyle"
-          @mousedown="startDrag('left', $event)"
-          @touchstart="startDrag('left', $event)"
         ></div>
       </div>
 
@@ -156,12 +159,15 @@
       </div>
 
       <!-- Right Joystick -->
-      <div class="joystick right-joystick" ref="rightJoystickRef">
+      <div 
+        class="joystick right-joystick" 
+        ref="rightJoystickRef"
+        @mousedown="startDrag('right', $event)"
+        @touchstart="startDrag('right', $event)"
+      >
         <div
           class="joystick-button"
           :style="rightJoystickStyle"
-          @mousedown="startDrag('right', $event)"
-          @touchstart="startDrag('right', $event)"
         ></div>
       </div>
     </div>
@@ -322,12 +328,18 @@ function startDrag(side, event) {
   event.preventDefault();
   event.stopPropagation();
 
+  const rect = side === 'left' 
+    ? leftJoystickRef.value.getBoundingClientRect() 
+    : rightJoystickRef.value.getBoundingClientRect();
+
   if (event.type === 'mousedown') {
     const identifier = 'mouse-' + side;
     if (side === 'left') {
       leftDragIdentifier.value = identifier;
+      updateJoystickPosition('left', event, rect);
     } else {
       rightDragIdentifier.value = identifier;
+      updateJoystickPosition('right', event, rect);
     }
 
     const handleMouseMove = (e) => handleDrag(e, identifier);
@@ -340,21 +352,17 @@ function startDrag(side, event) {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   } else if (event.type === 'touchstart') {
-    // Find the specific touch that started this drag
-    const touch = Array.from(event.touches).find((t) => {
-      const rect =
-        side === 'left'
-          ? leftJoystickRef.value.getBoundingClientRect()
-          : rightJoystickRef.value.getBoundingClientRect();
-
-      return isPointInRect(t.clientX, t.clientY, rect);
-    });
+    const touch = Array.from(event.touches).find((t) => 
+      isPointInRect(t.clientX, t.clientY, rect)
+    );
 
     if (touch) {
       if (side === 'left') {
         leftDragIdentifier.value = touch.identifier;
+        updateJoystickPosition('left', touch, rect);
       } else {
         rightDragIdentifier.value = touch.identifier;
+        updateJoystickPosition('right', touch, rect);
       }
     }
 
@@ -371,7 +379,13 @@ function startDrag(side, event) {
 
 // Add helper function to check if a point is within a rectangle
 function isPointInRect(x, y, rect) {
-  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  const margin = rect.width * 1; // Increased from 0.3 to 1 (100% margin around the joystick)
+  return (
+    x >= rect.left - margin &&
+    x <= rect.right + margin &&
+    y >= rect.top - margin &&
+    y <= rect.bottom + margin
+  );
 }
 
 // Update handleTouchDrag to handle touches independently
@@ -403,12 +417,15 @@ function updateJoystickPosition(side, touch, rect) {
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
 
+  // Calculate the delta from the center
   let deltaX = touch.clientX - centerX;
   let deltaY = touch.clientY - centerY;
 
-  // Limit the joystick movement to a circle
+  // Calculate the distance from center
   const radius = rect.width / 2;
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  // If clicked/touched outside the radius, normalize to max radius
   if (distance > radius) {
     const angle = Math.atan2(deltaY, deltaX);
     deltaX = Math.cos(angle) * radius;
@@ -513,7 +530,8 @@ watch(
   align-items: flex-end;
   padding: 10px;
   pointer-events: none;
-  z-index: 1000;
+  /* Ensure joystick is above video in fullscreen */
+  z-index: 1001;
 }
 
 .controls-section {

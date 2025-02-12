@@ -207,6 +207,7 @@
 
 <script setup>
 import { ref, onUnmounted, computed, watch, onMounted } from 'vue';
+import { useJoystickLayout } from '../composables/controls/joystickLayout';
 
 const props = defineProps({
   enabled: {
@@ -272,6 +273,22 @@ const triggerValues = ref({
 const controlSize = ref(100); // Default value
 const buttonSize = computed(() => controlSize.value / 2);
 const smallButtonSize = computed(() => controlSize.value / 3);
+
+const {
+  leftStickPosition,
+  rightStickPosition,
+  buttonsPosition,
+  triggersPosition,
+  loadLayout
+} = useJoystickLayout();
+
+const leftStick = ref({ x: 0, y: 0 });
+const rightStick = ref({ x: 0, y: 0 });
+
+const dragging = ref(null);
+const resizing = ref(null);
+const startPos = ref({ x: 0, y: 0 });
+const startSize = ref(0);
 
 function updateButton(button, pressed) {
   if (pressed) {
@@ -495,12 +512,17 @@ function stopDrag(side) {
 onMounted(() => {
   window.addEventListener('resize', handleResize);
   handleResize(); // Initial size calculation
+  loadLayout();
+  document.addEventListener('pointermove', handleDragMove);
+  document.addEventListener('pointerup', handleDragEnd);
 });
 
 onUnmounted(() => {
   stopDrag();
   pressedButtons.value.clear();
   window.removeEventListener('resize', handleResize);
+  document.removeEventListener('pointermove', handleDragMove);
+  document.removeEventListener('pointerup', handleDragEnd);
 });
 
 function handleResize() {
@@ -517,6 +539,71 @@ watch(
     console.log('Physical Gamepad Status:', newValue);
   }
 );
+
+const startDragMove = (element, event) => {
+  dragging.value = element;
+  startPos.value = {
+    x: event.clientX,
+    y: event.clientY
+  };
+  event.target.setPointerCapture(event.pointerId);
+};
+
+const startResize = (element, event) => {
+  resizing.value = element;
+  startPos.value = {
+    x: event.clientX,
+    y: event.clientY
+  };
+  startSize.value = getElementPosition(element).size;
+  event.target.setPointerCapture(event.pointerId);
+};
+
+const handleDragMove = (event) => {
+  if (dragging.value) {
+    const dx = event.clientX - startPos.value.x;
+    const dy = event.clientY - startPos.value.y;
+    const position = getElementPosition(dragging.value);
+    
+    // Convert pixel movement to percentage of viewport
+    const percentX = (dx / window.innerWidth) * 100;
+    const percentY = (dy / window.innerHeight) * 100;
+    
+    position.x = Math.max(0, Math.min(100, position.x + percentX));
+    position.y = Math.max(0, Math.min(100, position.y + percentY));
+    
+    startPos.value = {
+      x: event.clientX,
+      y: event.clientY
+    };
+  } else if (resizing.value) {
+    const dx = event.clientX - startPos.value.x;
+    const dy = event.clientY - startPos.value.y;
+    const position = getElementPosition(resizing.value);
+    
+    // Use the larger of dx or dy for proportional scaling
+    const delta = Math.max(dx, dy);
+    position.size = Math.max(60, Math.min(300, startSize.value + delta));
+  }
+};
+
+const handleDragEnd = () => {
+  dragging.value = null;
+  resizing.value = null;
+};
+
+const getElementPosition = (element) => {
+  switch (element) {
+    case 'leftStick':
+      return leftStickPosition.value;
+    case 'rightStick':
+      return rightStickPosition.value;
+    case 'buttons':
+      return buttonsPosition.value;
+    case 'triggers':
+      return triggersPosition.value;
+  }
+};
 </script>
 
 <style scoped>

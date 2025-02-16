@@ -8,6 +8,9 @@ export const joystickControl = (eventChannel) => {
   const isVirtualActive = ref(true);
   let userId = null;
   let animationFrameId = null;
+  const lastActivityTimestamp = ref(null);
+  const idleTimeout = 3000; // 3 seconds in milliseconds
+  const isIdle = ref(true);
 
   // Get user ID on initialization
   try {
@@ -38,10 +41,10 @@ export const joystickControl = (eventChannel) => {
   function handleGamepadConnected(event) {
     hasPhysicalGamepad.value = true;
     activeGamepad.value = event.gamepad;
+    isVirtualActive.value = false; // Always disable virtual when physical is connected
 
-    // Automatically switch to physical gamepad if joystick is enabled
+    // Start physical gamepad state updates if enabled
     if (joystickEnabled.value) {
-      isVirtualActive.value = false;
       updatePhysicalGamepadState();
     }
   }
@@ -120,7 +123,34 @@ export const joystickControl = (eventChannel) => {
     });
   }
 
+  function hasGamepadActivity(state) {
+    // Check axes
+    const hasAxisMovement = Object.values(state.axes).some(
+      (value) => Math.abs(value) > 0
+    );
+
+    // Check buttons
+    const hasButtonPress = Object.values(state.buttons).some(
+      (pressed) => pressed
+    );
+
+    return hasAxisMovement || hasButtonPress;
+  }
+
   function handleJoystickState(state) {
+    if (hasGamepadActivity(state)) {
+      lastActivityTimestamp.value = Date.now();
+      isIdle.value = false;
+    } else if (
+      !isIdle.value &&
+      Date.now() - lastActivityTimestamp.value > idleTimeout
+    ) {
+      isIdle.value = true;
+      return; // Don't send state if idle
+    } else if (isIdle.value) {
+      return; // Don't send state if already idle
+    }
+
     sendEventData({
       type: 'gamepad_state',
       state: {
@@ -142,7 +172,6 @@ export const joystickControl = (eventChannel) => {
 
     if (joystickEnabled.value) {
       handleJoystickConnect();
-      // If physical gamepad is connected, use it; otherwise, use virtual
       if (hasPhysicalGamepad.value) {
         isVirtualActive.value = false;
         updatePhysicalGamepadState();
@@ -155,6 +184,8 @@ export const joystickControl = (eventChannel) => {
         cancelAnimationFrame(animationFrameId);
       }
       isVirtualActive.value = false;
+      isIdle.value = true;
+      lastActivityTimestamp.value = null;
     }
   }
 
@@ -201,6 +232,7 @@ export const joystickControl = (eventChannel) => {
     isVirtualActive,
     toggleJoystick,
     handleJoystickState,
-    cleanup
+    cleanup,
+    isIdle
   };
 };

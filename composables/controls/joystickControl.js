@@ -138,6 +138,14 @@ export const joystickControl = (eventChannel) => {
   }
 
   function handleJoystickState(state) {
+    if (
+      !eventChannel?.value?.readyState ||
+      eventChannel.value.readyState !== 'open'
+    ) {
+      console.warn('Event channel not ready');
+      return;
+    }
+
     if (hasGamepadActivity(state)) {
       lastActivityTimestamp.value = Date.now();
       isIdle.value = false;

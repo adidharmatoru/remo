@@ -38,8 +38,9 @@ export const useJoystickLayout = () => {
   };
 
   // Watch for changes and save
-  watch([leftStickPosition, rightStickPosition, buttonsPosition, triggersPosition], 
-    () => saveLayout(), 
+  watch(
+    [leftStickPosition, rightStickPosition, buttonsPosition, triggersPosition],
+    () => saveLayout(),
     { deep: true }
   );
 
@@ -51,4 +52,4 @@ export const useJoystickLayout = () => {
     loadLayout,
     saveLayout
   };
-}; 
+};

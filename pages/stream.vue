@@ -8,6 +8,7 @@
         autoplay
         muted
         playsinline
+        @loadeddata="updateFPS"
         @mouseup="onVideoMouse('mouse_up')"
         @mousedown="onVideoMouse('mouse_down')"
         @mousemove="onVideoMouse('mouse_move')"
@@ -125,6 +126,7 @@
       secondary-label="ms"
       :minimize-delay="5000"
       title="Stream Controls"
+      :tertiary-label="`${fps}`"
       @toggle="toggleMenu"
       class="floating-menu"
     >
@@ -317,6 +319,19 @@ const {
   cleanup: cleanupJoystick
 } = joystickControl(eventChannel);
 
+// Add these refs near the top of the script section
+const fps = ref(0);
+const lastFrameTime = ref(performance.now());
+
+// Add this function to calculate FPS
+function updateFPS() {
+  const now = performance.now();
+  const delta = now - lastFrameTime.value;
+  fps.value = Math.round(1000 / delta);
+  lastFrameTime.value = now;
+  requestAnimationFrame(updateFPS);
+}
+
 // Watch for eventChannel changes
 /*global watch*/
 watch(eventChannel, (newChannel) => {
@@ -412,6 +427,7 @@ onUnmounted(() => {
   cleanupVideo();
   cleanupAudio();
   disconnect();
+  cancelAnimationFrame(updateFPS);
 });
 </script>
 

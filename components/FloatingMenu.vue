@@ -38,6 +38,18 @@
             secondaryLabel
           }}</span>
         </div>
+
+        <div class="floating-menu-divider" />
+        <div
+          class="floating-menu-content floating-menu-label"
+          title="Frame rate"
+        >
+          <div class="floating-menu-label-main">
+            {{ tertiaryLabel.split(' ')[0] }}
+          </div>
+          <span class="floating-menu-label-secondary">FPS</span>
+        </div>
+
         <div class="floating-menu-divider" />
         <div class="color-mode-wrapper">
           <ColorModePicker
@@ -84,6 +96,10 @@ export default {
     minimizeDelay: {
       type: Number,
       default: 3000
+    },
+    tertiaryLabel: {
+      type: String,
+      default: '0 FPS'
     }
   },
 

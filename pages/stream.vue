@@ -8,7 +8,6 @@
         autoplay
         muted
         playsinline
-        @loadeddata="updateFPS"
         @mouseup="onVideoMouse('mouse_up')"
         @mousedown="onVideoMouse('mouse_down')"
         @mousemove="onVideoMouse('mouse_move')"
@@ -287,7 +286,8 @@ const {
   eventChannel,
   videoStream,
   audioStream,
-  latency
+  latency,
+  peerConnection
 } = webRTC(websocket, sendMessage, isOnline, waitForConnection);
 
 // Initialize mouse controls
@@ -321,15 +321,17 @@ const {
 
 // Add these refs near the top of the script section
 const fps = ref(0);
-const lastFrameTime = ref(performance.now());
 
-// Add this function to calculate FPS
 function updateFPS() {
-  const now = performance.now();
-  const delta = now - lastFrameTime.value;
-  fps.value = Math.round(1000 / delta);
-  lastFrameTime.value = now;
-  requestAnimationFrame(updateFPS);
+  if (peerConnection.value && peerConnection.value.getStats) {
+    peerConnection.value.getStats().then((stats) => {
+      stats.forEach((report) => {
+        if (report.type === 'inbound-rtp' && report.kind === 'video') {
+          fps.value = report.framesPerSecond || 0;
+        }
+      });
+    });
+  }
 }
 
 // Watch for eventChannel changes
@@ -387,6 +389,9 @@ onMounted(async () => {
 
   setupFullscreenListeners();
 
+  // Start FPS polling
+  const fpsInterval = setInterval(updateFPS, 1000);
+
   if (websocket.value) {
     // Check if password is provided in URL
     if (route.query.pwd) {
@@ -417,17 +422,17 @@ onMounted(async () => {
       }
     };
   }
-});
 
-// Cleanup on component unmount
-onUnmounted(() => {
-  cleanupMouse();
-  cleanupKeyboard();
-  cleanupJoystick();
-  cleanupVideo();
-  cleanupAudio();
-  disconnect();
-  cancelAnimationFrame(updateFPS);
+  // Store the interval ID for cleanup
+  onUnmounted(() => {
+    clearInterval(fpsInterval);
+    cleanupMouse();
+    cleanupKeyboard();
+    cleanupJoystick();
+    cleanupVideo();
+    cleanupAudio();
+    disconnect();
+  });
 });
 </script>
 

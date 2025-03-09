@@ -41,6 +41,12 @@ export const mouseControl = (videoRef, eventChannel) => {
 
   const onVideoMouse = (action) => (event) => {
     if (!mouseEnabled.value) return;
+    // Only send button events when the mouse is locked
+    if (
+      action === 'mouse_move' &&
+      document.pointerLockElement === videoRef.value
+    )
+      return;
     event.preventDefault();
 
     const video = videoRef.value;
@@ -53,8 +59,7 @@ export const mouseControl = (videoRef, eventChannel) => {
     const eventData = {
       type: action,
       ...coords,
-      dx: 0,
-      dy: 0,
+      absolute: true,
       ...(action !== 'mouse_move' ? { button: ButtonName[event.button] } : {})
     };
 
@@ -85,10 +90,9 @@ export const mouseControl = (videoRef, eventChannel) => {
       const movementY = event.movementY || 0;
       sendEventData({
         type: 'mouse_move',
-        dx: movementX,
-        dy: movementY,
-        x: 0,
-        y: 0
+        x: movementX,
+        y: movementY,
+        absolute: false
       });
     }
   };

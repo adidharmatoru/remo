@@ -1,18 +1,30 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 
 let globalWebSocket = null;
+let globalIsOnline = ref(false);
 
 export function webSocket(isGlobal = true) {
   const websocket = ref(null);
-  const isOnline = ref(websocket.value ? true : false);
+  const isOnline = isGlobal ? globalIsOnline : ref(false);
   const reconnectInterval = ref(null);
   const keepAliveInterval = ref(null);
 
   const connect = () => {
-    if (globalWebSocket) {
+    // If using global WebSocket and it already exists and is open/connecting, reuse it
+    if (
+      isGlobal &&
+      globalWebSocket &&
+      (globalWebSocket.readyState === WebSocket.OPEN ||
+        globalWebSocket.readyState === WebSocket.CONNECTING)
+    ) {
       websocket.value = globalWebSocket;
       isOnline.value = globalWebSocket.readyState === WebSocket.OPEN;
       return;
+    }
+
+    // Close existing connection if any
+    if (websocket.value) {
+      websocket.value.close();
     }
 
     const websocketUrl = 'wss://remote-ws.adidharmatoru.dev';
@@ -56,7 +68,7 @@ export function webSocket(isGlobal = true) {
         if (!isOnline.value) {
           connect();
         }
-      }, 5000); // Try to reconnect every 5 seconds
+      }, 1000); // Try to reconnect every 1 second
     }
   };
 

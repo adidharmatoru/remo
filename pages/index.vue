@@ -153,19 +153,30 @@ const videos = [
 
 const saveName = () => {
   if (name.value.trim()) {
-    const userData = {
-      name: name.value,
-      id: uuidv4()
-    };
-    localStorage.setItem('userData', JSON.stringify(userData));
-    savedName.value = name.value;
+    try {
+      const userData = {
+        name: name.value,
+        id: uuidv4()
+      };
+      localStorage.setItem('userData', JSON.stringify(userData));
+      savedName.value = name.value;
+    } catch (error) {
+      console.error('Failed to save user data:', error);
+      // Still set the name in memory even if localStorage fails
+      savedName.value = name.value;
+    }
   }
 };
 
 onMounted(() => {
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-  if (userData.name) {
-    savedName.value = userData.name;
+  try {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    if (userData.name) {
+      savedName.value = userData.name;
+    }
+  } catch (error) {
+    console.error('Failed to load user data:', error);
+    // Continue without the saved data
   }
 
   setInterval(() => {

@@ -1,6 +1,6 @@
 <script setup>
 import { useRoute } from 'vue-router';
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onUnmounted } from 'vue';
 
 const route = useRoute();
 /*global webSocket*/
@@ -32,19 +32,32 @@ const showHeaderFooter = computed(() => {
 // Track connection status
 const connectionStatus = ref('offline');
 const statusBackgroundColor = ref('bg-red-500');
+const hideTimeout = ref(null);
 
 // Watch for changes in isOnline
 watch(isOnline, (newIsOnline) => {
+  // Clear any existing hide timeout
+  if (hideTimeout.value) {
+    clearTimeout(hideTimeout.value);
+    hideTimeout.value = null;
+  }
+
+  // Always show the indicator first
+  connectionStatus.value = newIsOnline ? 'connected' : 'offline';
+  statusBackgroundColor.value = newIsOnline ? 'bg-green-500' : 'bg-red-500';
+
+  // Only set hide timeout for connected state
   if (newIsOnline) {
-    connectionStatus.value = 'connected';
-    statusBackgroundColor.value = 'bg-green-500';
-    // Trigger the transition to hide after a delay
-    setTimeout(() => {
+    hideTimeout.value = setTimeout(() => {
       connectionStatus.value = 'hide';
     }, 1000);
-  } else {
-    connectionStatus.value = 'offline';
-    statusBackgroundColor.value = 'bg-red-500';
+  }
+});
+
+// Clean up timeout on component unmount
+onUnmounted(() => {
+  if (hideTimeout.value) {
+    clearTimeout(hideTimeout.value);
   }
 });
 </script>
@@ -52,26 +65,34 @@ watch(isOnline, (newIsOnline) => {
 <template>
   <div class="min-h-screen flex flex-col">
     <transition
-      enter-active-class="transition-all duration-300 ease-in-out"
-      enter-from-class="opacity-0 -translate-y-full"
-      enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition-all duration-300 ease-in-out"
-      leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 -translate-y-full"
+      enter-active-class="transition-all duration-500 ease-out"
+      enter-from-class="opacity-0 translate-x-full scale-95"
+      enter-to-class="opacity-100 translate-x-0 scale-100"
+      leave-active-class="transition-all duration-300 ease-in"
+      leave-from-class="opacity-100 translate-x-0 scale-100"
+      leave-to-class="opacity-0 translate-x-full scale-95"
     >
       <div
         v-if="connectionStatus !== 'hide'"
         :class="[
           statusBackgroundColor,
-          'text-white p-2 text-center fixed left-0 right-0 z-50',
-          { 'top-16': isHeaderVisible, 'top-0': !isHeaderVisible }
+          'connection-status-indicator text-white backdrop-blur-md backdrop-saturate-150 p-4 fixed rounded-xl shadow-2xl z-50 flex items-center gap-3'
         ]"
       >
-        {{
-          connectionStatus === 'offline'
-            ? 'You are currently offline. Attempting to reconnect...'
-            : 'Connected'
-        }}
+        <div
+          class="status-icon"
+          :class="{
+            'animate-pulse': connectionStatus === 'offline',
+            'animate-success': connectionStatus === 'connected'
+          }"
+        ></div>
+        <span class="font-medium tracking-wide">
+          {{
+            connectionStatus === 'offline'
+              ? 'Reconnecting to server...'
+              : 'Connected successfully'
+          }}
+        </span>
       </div>
     </transition>
 
@@ -208,5 +229,69 @@ a {
 }
 .transition-all {
   transition-property: all;
+}
+
+.connection-status-indicator {
+  bottom: 24px;
+  right: 24px;
+  max-width: 300px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.connection-status-indicator.bg-red-500 {
+  background: rgba(239, 68, 68, 0.85);
+}
+
+.connection-status-indicator.bg-green-500 {
+  background: rgba(34, 197, 94, 0.85);
+}
+
+.status-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  transition: all 0.3s ease;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes success {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-success {
+  animation: success 0.6s cubic-bezier(0.4, 0, 0.6, 1);
 }
 </style>

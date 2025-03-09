@@ -368,7 +368,11 @@ const fetchDevices = () => {
 onMounted(async () => {
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   if (Object.keys(userData).length === 0) {
-    router.push('/');
+    // Only redirect if we're not already on the index page
+    if (router.currentRoute.value.path !== '/') {
+      router.push('/');
+    }
+    return;
   }
 
   fetchDevices();

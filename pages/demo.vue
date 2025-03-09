@@ -253,7 +253,7 @@
         </p>
         <div class="flex justify-center">
           <a
-            href="https://github.com/adidharmatoru/Remo/releases/download/demo/demo.zip"
+            href="https://github.com/adidharmatoru/remo-windows/releases/download/demo/remo.zip"
             download
             class="inline-flex items-center border border-border-default rounded-lg bg-canvas-default px-6 py-3 text-high-contrast hover:opacity-90 shadow-sm"
           >

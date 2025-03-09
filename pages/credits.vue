@@ -229,21 +229,15 @@ const milestones = [
   },
   {
     date: 'Q2 2025 ~ Q3 2025',
-    status: 'In Progress',
+    status: 'Completed',
     title: 'Alpha Public Release',
     description:
       'Launch of first release (portable executable file) for public test.',
     features: [
       {
-        name: 'Support latest HEVC H.265 encoding',
-        description: 'Add latest support for the HEVC encoding',
+        name: 'Support latest AV1 encoding',
+        description: 'Add latest support for the AV1 encoding',
         icon: Monitor
-      },
-      {
-        name: "Early <a href='https://quic.video/'>Media Over QUIC</a> R&D?",
-        description:
-          'Use a new protocol to transmit data that is theoretically faster and smoother.',
-        icon: FileVideo2
       }
     ]
   },
@@ -254,6 +248,12 @@ const milestones = [
     description:
       'Advanced features for large-scale deployments and geo-destributions.',
     features: [
+      {
+        name: "Early <a href='https://quic.video/'>Media Over QUIC</a> R&D?",
+        description:
+          'Use a new protocol to transmit data that is theoretically faster and smoother.',
+        icon: FileVideo2
+      },
       {
         name: 'Enterprise vs Open Source',
         description: 'Choose route from here',

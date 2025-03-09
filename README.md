@@ -5,6 +5,14 @@
 
 Remo is a hardware-accelerated remote desktop solution built with Rust and Nuxt 3. This repository contains the front-end application that provides a seamless user interface.
 
+## Demo
+
+Repository:
+The demo repository is available [here](https://github.com/adidharmatoru/remo-windows)
+
+Download:
+Download directly from [public demo - latest release](https://github.com/adidharmatoru/remo-windows/releases/download/demo/remo.zip)
+
 ## Getting Started
 
 To get started, follow these steps:

@@ -68,14 +68,14 @@ export const mouseControl = (videoRef, eventChannel) => {
     const video = videoRef.value;
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
 
-    const sensitivity = 1;
+    const sensitivity = 32;
     const deltaX = event.deltaX ? event.deltaX : event.wheelDeltaX;
     const deltaY = event.deltaY ? event.deltaY : -event.wheelDelta;
 
     sendEventData({
       type: 'mouse_wheel',
-      x: parseInt(deltaX, 10),
-      y: parseInt(deltaY / sensitivity, 10)
+      x: Math.round(deltaX / sensitivity),
+      y: Math.round(deltaY / sensitivity)
     });
   };
 

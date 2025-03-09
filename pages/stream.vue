@@ -1,5 +1,13 @@
 <template>
   <div class="relative h-screen w-full overflow-hidden bg-bg-secondary">
+    <!-- Loading Animation -->
+    <LoadingAnimation
+      v-if="
+        isConnected &&
+        (!videoStream || (fps === 0 && !hasEstablishedConnection))
+      "
+    />
+
     <!-- Video Stream -->
     <div class="relative h-full w-full" :class="{ fullscreen: isFullscreen }">
       <video
@@ -239,6 +247,7 @@ import {
   TransitionRoot
 } from '@headlessui/vue';
 import VirtualJoystick from '../components/VirtualJoystick.vue';
+import LoadingAnimation from '../components/LoadingAnimation.vue';
 import { joystickControl } from '../composables/controls/joystickControl';
 
 const router = useRouter();
@@ -247,6 +256,7 @@ const showPasswordModal = ref(false);
 const password = ref('');
 const errorMessage = ref('');
 const isConnected = ref(false);
+const hasEstablishedConnection = ref(false);
 /*global computed*/
 const isEmbedMode = computed(() => route.query.embed === '1');
 
@@ -339,6 +349,13 @@ function updateFPS() {
 watch(eventChannel, (newChannel) => {
   if (newChannel) {
     // console.log('Event channel established');
+  }
+});
+
+// Watch for successful connection
+watch([videoStream, fps], ([newVideoStream, newFps]) => {
+  if (newVideoStream && newFps > 0) {
+    hasEstablishedConnection.value = true;
   }
 });
 

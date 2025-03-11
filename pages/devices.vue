@@ -246,7 +246,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -365,6 +365,20 @@ const fetchDevices = () => {
   });
 };
 
+const setupWebSocketHandlers = () => {
+  if (!websocket.value) return;
+
+  websocket.value.onmessage = (event) => {
+    const signal = JSON.parse(event.data);
+    if (signal.type === 'room_list_response') {
+      populateDevices(signal.rooms);
+      totalDevices.value = signal.total_count || 0;
+    } else if (signal.type === 'new_room_notification') {
+      fetchDevices();
+    }
+  };
+};
+
 onMounted(async () => {
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   if (Object.keys(userData).length === 0) {
@@ -375,21 +389,27 @@ onMounted(async () => {
     return;
   }
 
+  // Setup initial WebSocket handlers
+  setupWebSocketHandlers();
+
   fetchDevices();
 
   // Subscribe to room updates
   await sendMessageOnConnection({ type: 'subscribe_room_updates' });
 
-  // Listen for updates
-  websocket.value.onmessage = (event) => {
-    const signal = JSON.parse(event.data);
-    if (signal.type === 'room_list_response') {
-      populateDevices(signal.rooms);
-      totalDevices.value = signal.total_count || 0;
-    } else if (signal.type === 'new_room_notification') {
-      fetchDevices();
+  // Watch for WebSocket changes and reset handlers
+  watch(
+    () => websocket.value,
+    (newSocket) => {
+      if (newSocket) {
+        setupWebSocketHandlers();
+        // Resubscribe to room updates when connection is restored
+        sendMessageOnConnection({ type: 'subscribe_room_updates' });
+        // Refresh the device list
+        fetchDevices();
+      }
     }
-  };
+  );
 });
 
 onUnmounted(() => {

@@ -53,5 +53,16 @@ export default defineNuxtConfig({
   },
   imports: {
     dirs: ['composables/**']
-  }
+  },
+  // Add nitro configuration for static site generation
+  nitro: {
+    preset: 'static',
+    // Ensure all routes are pre-rendered during static site generation
+    prerender: {
+      crawlLinks: true,
+      routes: ['/', '/devices', '/credits', '/demo']
+    }
+  },
+  // Ensure router works in static mode
+  ssr: false
 });

@@ -372,7 +372,7 @@ const showModalError = (error) => {
 };
 
 const attemptConnection = async () => {
-  const deviceId = route.query.deviceId;
+  const deviceId = route.params.deviceId;
   if (!deviceId || !password.value) {
     showModalError('Device ID and password are required.');
     return;

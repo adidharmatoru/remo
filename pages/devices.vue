@@ -319,8 +319,7 @@ const getDeviceIcon = (os) => {
 const selectDevice = (device) => {
   if (device.online) {
     router.push({
-      path: '/stream',
-      query: { deviceId: device.id }
+      path: `/stream/${device.id}`
     });
   }
 };

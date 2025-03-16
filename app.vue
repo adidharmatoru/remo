@@ -26,7 +26,7 @@ useSeoMeta({
 });
 
 const showHeaderFooter = computed(() => {
-  return !['index', 'stream'].includes(route.name);
+  return !['index', 'stream-deviceId'].includes(route.name);
 });
 
 // Track connection status

@@ -134,6 +134,7 @@
       :minimize-delay="5000"
       title="Stream Controls"
       :tertiary-label="`${fps}`"
+      :label-title="`Latency (${connectionType})`"
       @toggle="toggleMenu"
       class="floating-menu"
     >
@@ -297,6 +298,7 @@ const {
   videoStream,
   audioStream,
   latency,
+  connectionType,
   peerConnection
 } = webRTC(websocket, sendMessage, isOnline, waitForConnection);
 

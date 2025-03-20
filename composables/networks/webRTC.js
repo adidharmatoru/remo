@@ -10,6 +10,7 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
   const name = ref(null);
   const currentDeviceId = ref(null);
   const latency = ref(0);
+  const connectionType = ref('Unknown');
   let latencyInterval = null;
 
   const iceCandidatesQueue = ref([]);
@@ -29,7 +30,8 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
 
       // Initialize WebRTC connection (Use iceServers from server)
       peerConnection.value = new RTCPeerConnection({
-        iceServers: []
+        iceServers: [],
+        iceTransportPolicy: 'relay'
       });
 
       // Handle incoming tracks
@@ -88,6 +90,39 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
               report.state === 'succeeded'
             ) {
               latency.value = report.currentRoundTripTime * 1000;
+
+              // Find the local and remote candidate reports
+              const localCandidateId = report.localCandidateId;
+              const remoteCandidateId = report.remoteCandidateId;
+
+              let localCandidateType = '';
+              let remoteCandidateType = '';
+
+              // Look for the candidate types
+              stats.forEach((stat) => {
+                if (
+                  stat.type === 'local-candidate' &&
+                  stat.id === localCandidateId
+                ) {
+                  localCandidateType = stat.candidateType;
+                }
+                if (
+                  stat.type === 'remote-candidate' &&
+                  stat.id === remoteCandidateId
+                ) {
+                  remoteCandidateType = stat.candidateType;
+                }
+              });
+
+              // Determine connection type based on candidate types
+              if (
+                localCandidateType === 'relay' ||
+                remoteCandidateType === 'relay'
+              ) {
+                connectionType.value = 'Relayed';
+              } else {
+                connectionType.value = 'Direct';
+              }
             }
           });
         });
@@ -264,6 +299,7 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
     uuid,
     currentDeviceId,
     latency,
+    connectionType,
     websocket,
     isOnline
   };

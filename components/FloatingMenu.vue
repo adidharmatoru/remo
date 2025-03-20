@@ -33,7 +33,9 @@
           class="floating-menu-content floating-menu-label"
           :title="labelTitle"
         >
-          <div class="floating-menu-label-main">{{ primaryLabel }}</div>
+          <div class="floating-menu-label-main" :class="latencyColorClass">
+            {{ primaryLabel }}
+          </div>
           <span class="floating-menu-label-secondary">{{
             secondaryLabel
           }}</span>
@@ -112,6 +114,16 @@ export default {
       left: 100,
       top: 50,
       minimizePanelInactive: props.minimizeDelay
+    });
+
+    // Add computed property for latency color class
+    const latencyColorClass = computed(() => {
+      const latency = parseInt(props.primaryLabel, 10);
+      if (isNaN(latency)) return '';
+
+      if (latency < 100) return 'latency-good';
+      if (latency < 180) return 'latency-medium';
+      return 'latency-bad';
     });
 
     /*global useColorMode*/
@@ -419,7 +431,8 @@ export default {
       panelStyle,
       onPointerDown,
       toggleSubmenu,
-      bringUp
+      bringUp,
+      latencyColorClass
     };
   }
 };
@@ -654,5 +667,21 @@ export default {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Add latency color styling */
+.latency-good {
+  color: #8fd9a8 !important;
+  font-weight: 600;
+}
+
+.latency-medium {
+  color: #e6c787 !important;
+  font-weight: 600;
+}
+
+.latency-bad {
+  color: #e6a0a0 !important;
+  font-weight: 600;
 }
 </style>

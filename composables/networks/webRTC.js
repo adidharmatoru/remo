@@ -27,9 +27,9 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
       uuid.value = userData.id;
       name.value = userData.name;
 
-      // Initialize WebRTC connection
+      // Initialize WebRTC connection (Use iceServers from server)
       peerConnection.value = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.adidharmatoru.dev:3479' }]
+        iceServers: []
       });
 
       // Handle incoming tracks

@@ -31,7 +31,6 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
       // Initialize WebRTC connection (Use iceServers from server)
       peerConnection.value = new RTCPeerConnection({
         iceServers: [],
-        iceTransportPolicy: 'relay'
       });
 
       // Handle incoming tracks

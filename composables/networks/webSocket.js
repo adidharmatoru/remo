@@ -27,7 +27,7 @@ export function webSocket(isGlobal = true) {
       websocket.value.close();
     }
 
-    const websocketUrl = 'wss://remote-ws.adidharmatoru.dev';
+    const websocketUrl = 'wss://remo-auth.adidharmatoru.dev';
     websocket.value = new WebSocket(websocketUrl);
 
     websocket.value.onopen = () => {

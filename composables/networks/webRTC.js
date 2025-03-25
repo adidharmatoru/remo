@@ -14,9 +14,6 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
   let latencyInterval = null;
 
   const iceCandidatesQueue = ref([]);
-  const videoFrozen = ref(false);
-  const freezeDetectionInterval = ref(null);
-  const freezeThreshold = 3000;
 
   const initConnections = () => {
     return new Promise((resolve) => {
@@ -30,7 +27,7 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
 
       // Initialize WebRTC connection (Use iceServers from server)
       peerConnection.value = new RTCPeerConnection({
-        iceServers: [],
+        iceServers: []
       });
 
       // Handle incoming tracks
@@ -56,7 +53,6 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
 
       setupDataChannelHandler();
       startLatencyUpdate();
-      startFreezeDetection();
       resolve(true);
     });
   };
@@ -67,12 +63,10 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
         const dataChannel = event.channel;
 
         dataChannel.onopen = () => {
-          console.log('Data channel is open');
           eventChannel.value = dataChannel;
         };
 
         dataChannel.onclose = () => {
-          console.log('Data channel is closed');
           eventChannel.value = null;
         };
       };
@@ -127,55 +121,6 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
         });
       }
     }, 1000);
-  };
-
-  const startFreezeDetection = () => {
-    freezeDetectionInterval.value = setInterval(async () => {
-      if (peerConnection.value && peerConnection.value.getStats) {
-        const stats = await peerConnection.value.getStats();
-        let videoTrackStats = null;
-
-        stats.forEach((report) => {
-          if (report.kind === 'video') {
-            videoTrackStats = report;
-          }
-        });
-
-        if (videoTrackStats) {
-          if (videoTrackStats.framesPerSecond === 0 && !videoFrozen.value) {
-            videoFrozen.value = true;
-            setTimeout(() => {
-              if (videoFrozen.value) {
-                // console.log(
-                //   'Video is frozen. Attempting to reestablish the track...'
-                // );
-                attemptToReestablishVideoTrack();
-              }
-            }, freezeThreshold);
-          } else if (videoTrackStats.framesPerSecond > 0) {
-            videoFrozen.value = false;
-          }
-        }
-      }
-    }, 1000);
-  };
-
-  const attemptToReestablishVideoTrack = async () => {
-    try {
-      if (videoStream.value) {
-        videoStream.value.getTracks().forEach((track) => track.stop());
-      }
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: true
-      });
-      videoStream.value = newStream;
-      newStream.getTracks().forEach((track) => {
-        peerConnection.value.addTrack(track, newStream);
-      });
-      console.log('Reestablished video track successfully.');
-    } catch (error) {
-      console.error('Error reestablishing video track:', error);
-    }
   };
 
   const handleIceCandidate = async (iceCandidate) => {
@@ -279,9 +224,6 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
     }
     if (peerConnection.value) {
       peerConnection.value.close();
-    }
-    if (freezeDetectionInterval.value) {
-      clearInterval(freezeDetectionInterval.value);
     }
   });
 

@@ -32,6 +32,8 @@
         <div
           class="floating-menu-content floating-menu-label"
           :title="labelTitle"
+          @click="$emit('toggle-stats')"
+          style="cursor: pointer"
         >
           <div class="floating-menu-label-main" :class="latencyColorClass">
             {{ primaryLabel }}

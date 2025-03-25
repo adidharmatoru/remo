@@ -11,7 +11,21 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
   const currentDeviceId = ref(null);
   const latency = ref(0);
   const connectionType = ref('Unknown');
+  const videoStats = ref({
+    fps: 0,
+    resolution: { width: 0, height: 0 },
+    packetsLost: 0,
+    jitter: 0
+  });
+  const connectionStats = ref({
+    bytesReceived: 0,
+    bytesSent: 0,
+    bandwidth: 0
+  });
   let latencyInterval = null;
+  let lastBytesReceived = 0;
+  let lastBytesSent = 0;
+  let lastBandwidthUpdate = 0;
 
   const iceCandidatesQueue = ref([]);
 
@@ -34,6 +48,19 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
       peerConnection.value.ontrack = (event) => {
         if (event.track.kind === 'video') {
           videoStream.value = event.streams[0];
+          // Request stats immediately when track is received
+          if (peerConnection.value.getStats) {
+            peerConnection.value.getStats().then((stats) => {
+              stats.forEach((report) => {
+                if (report.type === 'track' && report.kind === 'video') {
+                  videoStats.value.resolution = {
+                    width: report.frameWidth || 0,
+                    height: report.frameHeight || 0
+                  };
+                }
+              });
+            });
+          }
         } else if (event.track.kind === 'audio') {
           audioStream.value = event.streams[0];
         }
@@ -116,6 +143,39 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
               } else {
                 connectionType.value = 'Direct';
               }
+
+              // Update connection stats
+              const now = Date.now();
+              const timeDiff = (now - lastBandwidthUpdate) / 1000; // in seconds
+
+              if (timeDiff >= 1) {
+                const bytesReceivedDiff =
+                  report.bytesReceived - lastBytesReceived;
+                const bytesSentDiff = report.bytesSent - lastBytesSent;
+
+                connectionStats.value = {
+                  ...connectionStats.value,
+                  bytesReceived: report.bytesReceived,
+                  bytesSent: report.bytesSent,
+                  bandwidth:
+                    ((bytesReceivedDiff + bytesSentDiff) * 8) / timeDiff / 1000 // in kbps
+                };
+
+                lastBytesReceived = report.bytesReceived;
+                lastBytesSent = report.bytesSent;
+                lastBandwidthUpdate = now;
+              }
+            }
+
+            // Video stats
+            if (report.type === 'inbound-rtp' && report.kind === 'video') {
+              videoStats.value.fps = report.framesPerSecond || 0;
+              videoStats.value.packetsLost = report.packetsLost || 0;
+              videoStats.value.jitter = report.jitter || 0;
+              videoStats.value.resolution = {
+                width: report.frameWidth || 0,
+                height: report.frameHeight || 0
+              };
             }
           });
         });
@@ -241,6 +301,8 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
     currentDeviceId,
     latency,
     connectionType,
+    videoStats,
+    connectionStats,
     websocket,
     isOnline
   };

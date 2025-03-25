@@ -136,6 +136,7 @@
       :tertiary-label="`${fps}`"
       :label-title="`Latency (${connectionType})`"
       @toggle="toggleMenu"
+      @toggle-stats="showStats = !showStats"
       class="floating-menu"
     >
       <template #additional-menus>
@@ -234,6 +235,16 @@
       :has-physical-gamepad="hasPhysicalGamepad"
       :on-state-change="handleJoystickState"
     />
+
+    <!-- WebRTC Stats Overlay -->
+    <WebRTCStatsOverlay
+      v-if="isConnected"
+      v-model:visible="showStats"
+      :latency="latency"
+      :connection-type="connectionType"
+      :video-stats="videoStats"
+      :connection-stats="connectionStats"
+    />
   </div>
 </template>
 
@@ -249,6 +260,7 @@ import {
 } from '@headlessui/vue';
 import VirtualJoystick from '../components/VirtualJoystick.vue';
 import LoadingAnimation from '../components/LoadingAnimation.vue';
+import WebRTCStatsOverlay from '../components/WebRTCStatsOverlay.vue';
 import { joystickControl } from '../composables/controls/joystickControl';
 
 const router = useRouter();
@@ -299,7 +311,9 @@ const {
   audioStream,
   latency,
   connectionType,
-  peerConnection
+  peerConnection,
+  videoStats,
+  connectionStats
 } = webRTC(websocket, sendMessage, isOnline, waitForConnection);
 
 // Initialize mouse controls
@@ -333,6 +347,7 @@ const {
 
 // Add these refs near the top of the script section
 const fps = ref(0);
+const showStats = ref(false);
 
 function updateFPS() {
   if (peerConnection.value && peerConnection.value.getStats) {

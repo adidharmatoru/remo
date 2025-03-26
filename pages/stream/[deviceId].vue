@@ -1,5 +1,7 @@
 <template>
-  <div class="relative h-screen w-full overflow-hidden bg-bg-secondary">
+  <div
+    class="relative h-screen w-full overflow-hidden bg-bg-secondary no-select"
+  >
     <!-- Loading Animation -->
     <LoadingAnimation
       v-if="

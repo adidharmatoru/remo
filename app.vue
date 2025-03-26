@@ -294,4 +294,12 @@ a {
 .animate-success {
   animation: success 0.6s cubic-bezier(0.4, 0, 0.6, 1);
 }
+
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* Prevents callout menu on iOS */
+}
 </style>

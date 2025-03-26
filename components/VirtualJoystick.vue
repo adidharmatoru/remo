@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="enabled && !hasPhysicalGamepad"
-    class="virtual-joystick-container"
+    class="virtual-joystick-container no-select"
     @touchstart.prevent
     @touchmove.prevent
     @touchend.prevent

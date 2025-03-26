@@ -2,7 +2,7 @@
   <div
     v-if="visible"
     ref="overlayRef"
-    class="fixed z-[10001] bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg"
+    class="fixed z-[10001] bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg no-select"
     :class="{ 'opacity-50 hover:opacity-100 transition-opacity': !isExpanded }"
     :style="{
       top: position.y + 'px',

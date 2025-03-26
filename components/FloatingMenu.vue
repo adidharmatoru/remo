@@ -7,7 +7,8 @@
       :style="[anchorStyle, vars]"
       :class="{
         'floating-menu-vertical': isVertical,
-        'floating-menu-hide': isMinimized
+        'floating-menu-hide': isMinimized,
+        'no-select': true
       }"
       @mousemove="bringUp"
     >

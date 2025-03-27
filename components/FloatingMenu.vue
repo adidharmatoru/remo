@@ -477,20 +477,25 @@ export default {
   box-shadow: 2px 2px 8px var(--floating-menu-shadow);
   user-select: none;
   touch-action: none;
-  /* width: auto; Allow width to be dynamic based on content */
-  max-width: 1080px; /* Remove max-width to ensure it fits content */
-  transition: all 0.6s ease;
+  max-width: 1080px;
+  transition:
+    max-width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
+  transform-origin: left center;
 }
 
 .floating-menu-vertical .floating-menu-panel {
   transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
 }
 
 .floating-menu-hide .floating-menu-panel {
   max-width: 32px;
   padding: 8px;
+  transform: translate(-50%, -50%);
 }
 
 .floating-menu-divider {

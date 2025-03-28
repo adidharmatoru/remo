@@ -6,7 +6,9 @@
     <LoadingAnimation
       v-if="
         isConnected &&
-        (!videoStream || (fps === 0 && !hasEstablishedConnection))
+        (!videoStream ||
+          (fps === 0 && !hasEstablishedConnection) ||
+          isReconnecting)
       "
     />
 
@@ -15,6 +17,7 @@
       <video
         ref="videoRef"
         class="h-full w-full object-contain"
+        :class="{ 'opacity-50': isReconnecting }"
         autoplay
         muted
         playsinline
@@ -315,7 +318,8 @@ const {
   connectionType,
   peerConnection,
   videoStats,
-  connectionStats
+  connectionStats,
+  isReconnecting
 } = webRTC(websocket, sendMessage, isOnline, waitForConnection);
 
 // Initialize mouse controls
@@ -373,7 +377,7 @@ watch(eventChannel, (newChannel) => {
 
 // Watch for successful connection
 watch([videoStream, fps], ([newVideoStream, newFps]) => {
-  if (newVideoStream && newFps > 0) {
+  if (newVideoStream && newFps > 0 && !isReconnecting) {
     hasEstablishedConnection.value = true;
   }
 });

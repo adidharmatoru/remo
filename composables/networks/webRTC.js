@@ -11,6 +11,11 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
   const currentDeviceId = ref(null);
   const latency = ref(0);
   const connectionType = ref('Unknown');
+  const isReconnecting = ref(false);
+  const reconnectAttempts = ref(0);
+  const maxReconnectAttempts = 5;
+  const reconnectDelay = 2000;
+  const lastPassword = ref('');
   const videoStats = ref({
     fps: 0,
     resolution: { width: 0, height: 0 },
@@ -26,6 +31,7 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
   let lastBytesReceived = 0;
   let lastBytesSent = 0;
   let lastBandwidthUpdate = 0;
+  let reconnectTimeout = null;
 
   const iceCandidatesQueue = ref([]);
 
@@ -75,6 +81,20 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
             from: uuid.value,
             to: currentDeviceId.value
           });
+        }
+      };
+
+      // Add connection state change handler
+      peerConnection.value.onconnectionstatechange = () => {
+        if (
+          peerConnection.value.connectionState === 'disconnected' ||
+          peerConnection.value.connectionState === 'failed'
+        ) {
+          handleDisconnection();
+        } else if (peerConnection.value.connectionState === 'connected') {
+          isConnected.value = true;
+          isReconnecting.value = false;
+          reconnectAttempts.value = 0;
         }
       };
 
@@ -249,13 +269,48 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
     }
   };
 
+  const handleDisconnection = async () => {
+    isConnected.value = false;
+
+    if (isReconnecting.value || !currentDeviceId.value || !lastPassword.value) {
+      return;
+    }
+
+    if (reconnectAttempts.value >= maxReconnectAttempts) {
+      isReconnecting.value = false;
+      reconnectAttempts.value = 0;
+      return;
+    }
+
+    isReconnecting.value = true;
+    reconnectAttempts.value++;
+
+    // Clear old connection
+    if (peerConnection.value) {
+      peerConnection.value.close();
+    }
+    videoStream.value = null;
+    audioStream.value = null;
+    eventChannel.value = null;
+
+    // Wait before attempting reconnection
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+    }
+
+    reconnectTimeout = setTimeout(async () => {
+      await initConnections();
+      await connectToDevice(currentDeviceId.value, lastPassword.value);
+    }, reconnectDelay);
+  };
+
   const connectToDevice = async (deviceId, password) => {
     if (!isOnline.value) {
-      // console.log('Waiting for connection to be established...');
       await waitForConnection();
     }
 
     currentDeviceId.value = deviceId;
+    lastPassword.value = password;
 
     sendMessage({
       type: 'join',
@@ -282,6 +337,9 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
     if (latencyInterval) {
       clearInterval(latencyInterval);
     }
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+    }
     if (peerConnection.value) {
       peerConnection.value.close();
     }
@@ -297,6 +355,7 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
     videoStream,
     audioStream,
     isConnected,
+    isReconnecting,
     uuid,
     currentDeviceId,
     latency,

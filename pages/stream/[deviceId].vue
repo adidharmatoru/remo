@@ -5,10 +5,9 @@
     <!-- Loading Animation -->
     <LoadingAnimation
       v-if="
-        isConnected &&
-        (!videoStream ||
-          (fps === 0 && !hasEstablishedConnection) ||
-          isReconnecting)
+        (isConnected &&
+          (!videoStream || (!hasEstablishedConnection && fps === 0))) ||
+        (isReconnecting && (!videoStream || !hasEstablishedConnection))
       "
     />
 
@@ -377,8 +376,15 @@ watch(eventChannel, (newChannel) => {
 
 // Watch for successful connection
 watch([videoStream, fps], ([newVideoStream, newFps]) => {
-  if (newVideoStream && newFps > 0 && !isReconnecting) {
+  if (newVideoStream && newFps > 0) {
     hasEstablishedConnection.value = true;
+  }
+});
+
+// Reset established connection state when reconnecting starts
+watch(isReconnecting, (newValue) => {
+  if (newValue) {
+    hasEstablishedConnection.value = false;
   }
 });
 

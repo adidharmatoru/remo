@@ -2,8 +2,11 @@
   <div
     v-if="visible"
     ref="overlayRef"
-    class="fixed z-[10001] bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg no-select"
-    :class="{ 'opacity-50 hover:opacity-100 transition-opacity': !isExpanded }"
+    class="fixed z-[10001] bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg no-select transition-opacity"
+    :class="{
+      'opacity-50 hover:opacity-100': !isExpanded || (isExpanded && !isDragging),
+      'transform scale-102': isDragging
+    }"
     :style="{
       top: position.y + 'px',
       left: position.x + 'px',
@@ -13,7 +16,7 @@
   >
     <!-- Header -->
     <div
-      class="flex items-center justify-between p-3 border-b border-white/10 cursor-move"
+      class="flex items-center p-3 border-b border-white/10 cursor-move"
       @mousedown="startDragging"
       @mousemove="onDrag"
       @mouseup="stopDragging"
@@ -23,7 +26,7 @@
         <Icon name="lucide:activity" class="w-4 h-4 text-primary-500" />
         <span class="font-medium">RealTimeConnection Stats</span>
       </div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-2 ml-2">
         <button
           class="p-1 hover:bg-white/10 rounded transition-colors flex items-center justify-center"
           @click="isExpanded = !isExpanded"
@@ -33,12 +36,12 @@
             class="w-4 h-4"
           />
         </button>
-        <button
+        <!-- <button
           class="p-1 hover:bg-white/10 rounded transition-colors flex items-center justify-center"
           @click="$emit('update:visible', false)"
         >
           <Icon name="lucide:x" class="w-4 h-4" />
-        </button>
+        </button> -->
       </div>
     </div>
 

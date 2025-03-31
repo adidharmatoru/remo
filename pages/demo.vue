@@ -232,7 +232,47 @@
             {{ demo.title }}
           </h3>
           <p class="mt-2 flex-grow text-default">{{ demo.description }}</p>
-          <video class="mt-4 overflow-hidden rounded-lg" controls playsinline>
+
+          <!-- YouTube Embed -->
+          <div
+            v-if="demo.isYoutubeEmbed"
+            class="mt-4 overflow-hidden rounded-lg"
+            style="aspect-ratio: 16/9"
+          >
+            <iframe
+              class="w-full h-full"
+              :src="`https://www.youtube.com/embed/${demo.youtubeId}?autoplay=0&controls=1&rel=0`"
+              title="YouTube video player"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            >
+            </iframe>
+          </div>
+
+          <!-- Twitch Embed -->
+          <div
+            v-else-if="demo.isTwitchEmbed"
+            class="mt-4 overflow-hidden rounded-lg"
+            style="aspect-ratio: 16/9"
+          >
+            <iframe
+              class="w-full h-full"
+              :src="`https://player.twitch.tv/?video=${demo.twitchVideoId}&parent=${domainName}&autoplay=false`"
+              frameborder="0"
+              scrolling="no"
+              allowfullscreen="true"
+            >
+            </iframe>
+          </div>
+
+          <!-- Regular Video -->
+          <video
+            v-else
+            class="mt-4 overflow-hidden rounded-lg"
+            controls
+            playsinline
+          >
             <source :src="demo.videoSrc" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
@@ -267,12 +307,22 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const showVideo = ref(false);
 const videoSrc = ref(
   'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/demo.mov'
 );
+
+const domain = ref('');
+
+onMounted(() => {
+  domain.value = window.location.hostname;
+});
+
+const domainName = computed(() => {
+  return domain.value || 'localhost';
+});
 
 const demos = [
   {
@@ -298,6 +348,20 @@ const demos = [
     description:
       'Dive into the strategies of MOBAs and RTS games with minimal lag for an awesome experience!',
     videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/moba.mov'
+  },
+  {
+    title: 'Mobile Gaming',
+    description:
+      "Experience smooth mobile gaming with Remo's hardware acceleration - perfect for playing on the go!",
+    isYoutubeEmbed: true,
+    youtubeId: 'BKhFIZDeOLg'
+  },
+  {
+    title: 'Live Streaming',
+    description:
+      "Stream your gameplay with friends and viewers from any device using Remo's low-latency connection!",
+    isTwitchEmbed: true,
+    twitchVideoId: '2342927439'
   }
 ];
 

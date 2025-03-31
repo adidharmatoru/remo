@@ -4,7 +4,8 @@
     ref="overlayRef"
     class="fixed z-[10001] bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg no-select transition-opacity"
     :class="{
-      'opacity-50 hover:opacity-100': !isExpanded || (isExpanded && !isDragging),
+      'opacity-50 hover:opacity-100':
+        !isExpanded || (isExpanded && !isDragging),
       'transform scale-102': isDragging
     }"
     :style="{

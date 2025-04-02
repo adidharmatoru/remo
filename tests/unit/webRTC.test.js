@@ -45,7 +45,7 @@ describe('webRTC', () => {
     const result = await rtc.initConnections();
     expect(result).toBe(true);
 
-    expect(rtc.uuid.value).toBe('test-id');
+    expect(rtc.uuid.value).toMatch(/^test-id_\d+$/);
   });
 
   it('should handle data channel setup', async () => {
@@ -153,16 +153,16 @@ describe('webRTC', () => {
     await rtc.initConnections();
     await rtc.connectToDevice('test-device', 'test-password');
 
-    expect(mockSendMessage).toHaveBeenCalledWith({
+    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
       type: 'join',
       room: 'test-device',
-      from: 'test-id',
+      from: expect.stringMatching(/^test-id_\d+$/),
       name: 'test-name',
       auth: {
         type: 'password',
         password: 'test-password'
       }
-    });
+    }));
   });
 
   it('should clean up resources on disconnect', () => {

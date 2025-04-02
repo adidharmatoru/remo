@@ -36,13 +36,14 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
   const iceCandidatesQueue = ref([]);
 
   const initConnections = () => {
+    const timestamp = Date.now();
     return new Promise((resolve) => {
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
       if (!userData.id) {
         resolve(false);
         return;
       }
-      uuid.value = userData.id;
+      uuid.value = userData.id + '_' + timestamp;
       name.value = userData.name;
 
       // Initialize WebRTC connection (Use iceServers from server)

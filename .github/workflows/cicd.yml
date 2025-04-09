@@ -54,8 +54,11 @@ jobs:
 
       - name: Build the Docker image
         run: |
-          docker build . --file Dockerfile --tag ${{ secrets.DOCKER_REGISTRY }}:latest
+          docker build . --file Dockerfile \
+            --tag ${{ secrets.DOCKER_REGISTRY }}:latest \
+            --tag ${{ secrets.DOCKER_REGISTRY }}:${{ github.sha }}
 
       - name: Push the Docker image
         run: |
-          docker push ${{ secrets.DOCKER_REGISTRY }}
+          docker push ${{ secrets.DOCKER_REGISTRY }}:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}:${{ github.sha }}

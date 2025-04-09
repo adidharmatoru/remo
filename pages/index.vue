@@ -18,6 +18,11 @@
           muted
           loop
           playsinline
+          :ref="
+            (el) => {
+              if (el) videoRefs[index] = el;
+            }
+          "
         />
       </div>
     </div>
@@ -125,12 +130,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 
 const name = ref('');
 const savedName = ref('');
 const currentVideoIndex = ref(0);
+const videoRefs = ref([]);
 
 const videos = [
   {
@@ -150,6 +156,19 @@ const videos = [
     title: 'Media Streaming'
   }
 ];
+
+// Add this watch effect to handle video playback
+watch(currentVideoIndex, (newIndex, oldIndex) => {
+  // Pause the previous video if it exists
+  if (videoRefs.value[oldIndex]) {
+    videoRefs.value[oldIndex].pause();
+  }
+
+  // Play the new current video
+  if (videoRefs.value[newIndex]) {
+    videoRefs.value[newIndex].play();
+  }
+});
 
 const saveName = () => {
   if (name.value.trim()) {
@@ -178,6 +197,13 @@ onMounted(() => {
     console.error('Failed to load user data:', error);
     // Continue without the saved data
   }
+
+  // Initialize the first video
+  setTimeout(() => {
+    if (videoRefs.value[currentVideoIndex.value]) {
+      videoRefs.value[currentVideoIndex.value].play();
+    }
+  }, 100);
 
   setInterval(() => {
     currentVideoIndex.value = (currentVideoIndex.value + 1) % videos.length;

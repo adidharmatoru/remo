@@ -153,16 +153,18 @@ describe('webRTC', () => {
     await rtc.initConnections();
     await rtc.connectToDevice('test-device', 'test-password');
 
-    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'join',
-      room: 'test-device',
-      from: expect.stringMatching(/^test-id_\d+$/),
-      name: 'test-name',
-      auth: {
-        type: 'password',
-        password: 'test-password'
-      }
-    }));
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'join',
+        room: 'test-device',
+        from: expect.stringMatching(/^test-id_\d+$/),
+        name: 'test-name',
+        auth: {
+          type: 'password',
+          password: 'test-password'
+        }
+      })
+    );
   });
 
   it('should clean up resources on disconnect', () => {

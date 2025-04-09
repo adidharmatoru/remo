@@ -130,7 +130,9 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
               report.type === 'candidate-pair' &&
               (report.state === 'succeeded' || report.selected)
             ) {
-              latency.value = (report.currentRoundTripTime || report.roundTripTime || 0) * 1000;
+              latency.value =
+                (report.currentRoundTripTime || report.roundTripTime || 0) *
+                1000;
 
               // Find the local and remote candidate reports
               const localCandidateId = report.localCandidateId;

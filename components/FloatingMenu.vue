@@ -21,6 +21,7 @@
         class="floating-menu-panel"
         :style="panelStyle"
         @pointerdown="onPointerDown"
+        @touchstart.stop="bringUp"
       >
         <button
           class="floating-menu-icon-button floating-menu-main-button"

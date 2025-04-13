@@ -9,6 +9,7 @@
           (!videoStream || (!hasEstablishedConnection && fps === 0))) ||
         (isReconnecting && (!videoStream || !hasEstablishedConnection))
       "
+      :reconnection-status="reconnectionStatus"
     />
 
     <!-- Video Stream -->
@@ -318,7 +319,8 @@ const {
   peerConnection,
   videoStats,
   connectionStats,
-  isReconnecting
+  isReconnecting,
+  reconnectionStatus
 } = webRTC(websocket, sendMessage, isOnline, waitForConnection);
 
 // Initialize mouse controls

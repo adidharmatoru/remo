@@ -18,9 +18,21 @@
           :style="{ animationDelay: `${(i - 1) * 0.2}s` }"
         />
       </div>
+      <div class="reconnection-status">
+        {{ reconnectionStatus }}
+      </div>
     </div>
   </div>
 </template>
+
+<script setup>
+defineProps({
+  reconnectionStatus: {
+    type: String,
+    default: ''
+  }
+});
+</script>
 
 <style scoped>
 .loading-container {
@@ -86,5 +98,10 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+.reconnection-status {
+  @apply mt-4 text-white text-opacity-90 text-base font-medium;
+  animation: fadeIn 0.5s ease-out;
 }
 </style>

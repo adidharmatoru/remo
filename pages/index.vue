@@ -14,7 +14,6 @@
         <video
           :src="video.url"
           class="h-full w-full object-cover"
-          autoplay
           muted
           loop
           playsinline
@@ -140,20 +139,20 @@ const videoRefs = ref([]);
 
 const videos = [
   {
-    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/code.webm',
+    url: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/highlights-lite/code.mp4',
     title: 'Code'
   },
   {
-    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/fps.webm',
+    url: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/highlights-lite/watch.mp4',
+    title: 'Media Streaming'
+  },
+  {
+    url: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/highlights-lite/fps.mp4',
     title: 'FPS Game'
   },
   {
-    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/moba.webm',
+    url: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/highlights-lite/moba.mp4',
     title: 'MOBA/RTS Game'
-  },
-  {
-    url: 'https://s3.adidharmatoru.dev/dev/uploads/videos/highlights/watch.webm',
-    title: 'Media Streaming'
   }
 ];
 
@@ -198,12 +197,10 @@ onMounted(() => {
     // Continue without the saved data
   }
 
-  // Initialize the first video
-  setTimeout(() => {
-    if (videoRefs.value[currentVideoIndex.value]) {
-      videoRefs.value[currentVideoIndex.value].play();
-    }
-  }, 100);
+  // Play the first video immediately
+  if (videoRefs.value[currentVideoIndex.value]) {
+    videoRefs.value[currentVideoIndex.value].play();
+  }
 
   setInterval(() => {
     currentVideoIndex.value = (currentVideoIndex.value + 1) % videos.length;

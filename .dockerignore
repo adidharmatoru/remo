@@ -1,1 +1,21 @@
+# Directories
+node_modules
+.git
+.github
+.nuxt
+dist
 coverage
+.output
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example

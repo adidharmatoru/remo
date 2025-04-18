@@ -101,7 +101,20 @@ defineProps({
 }
 
 .reconnection-status {
-  @apply mt-4 text-white text-opacity-90 text-base font-medium;
-  animation: fadeIn 0.5s ease-out;
+  @apply mt-8 text-white text-lg font-medium tracking-wider;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>

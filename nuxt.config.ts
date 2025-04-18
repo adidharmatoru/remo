@@ -6,7 +6,8 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@nuxtjs/color-mode',
     '@nuxt/icon',
-    '@nuxt/test-utils/module'
+    '@nuxt/test-utils/module',
+    '@nuxtjs/seo'
   ],
   colorMode: {
     preference: 'dark', // default value of $colorMode.preference
@@ -54,15 +55,28 @@ export default defineNuxtConfig({
   imports: {
     dirs: ['composables/**']
   },
-  // Add nitro configuration for static site generation
+  // Remove static site generation configuration
   nitro: {
-    preset: 'static',
-    // Ensure all routes are pre-rendered during static site generation
-    prerender: {
-      crawlLinks: true,
-      routes: ['/', '/devices', '/credits', '/demo']
+    // Enable server-side rendering
+    preset: 'node-server',
+    // Add compression for better performance
+    compressPublicAssets: true,
+    // Add caching headers for static assets
+    routeRules: {
+      '/_nuxt/**': {
+        headers: { 'cache-control': 'public, max-age=31536000, immutable' }
+      }
     }
   },
-  // Ensure router works in static mode
-  ssr: false
+  // Enable server-side rendering
+  ssr: true,
+  // SEO Tags
+  site: {
+    url: 'https://remo.adidharmatoru.dev',
+    name: 'Remo - Hardware-Accelerated Remote Desktop',
+    description: 'Hardware-Accelerated Remote Desktop'
+  },
+  schemaOrg: {
+    identity: 'Organization'
+  }
 });

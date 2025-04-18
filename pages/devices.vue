@@ -248,6 +248,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { initializeUserData } from '../composables/networks/webSocket';
+
+/*global defineOgImageComponent*/
+defineOgImageComponent('Remo', {
+  headline: 'Devices',
+  title: 'Choose a Device',
+  description: 'Choose a device to connect to 💻',
+  colorMode: 'light'
+});
 
 const router = useRouter();
 
@@ -379,7 +388,7 @@ const setupWebSocketHandlers = () => {
 };
 
 onMounted(async () => {
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const userData = initializeUserData();
   if (Object.keys(userData).length === 0) {
     // Only redirect if we're not already on the index page
     if (router.currentRoute.value.path !== '/') {

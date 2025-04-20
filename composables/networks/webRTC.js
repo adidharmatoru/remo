@@ -1,88 +1,161 @@
 import { ref, onUnmounted, watch } from 'vue';
 
 export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
-  const peerConnection = ref(null);
-  const eventChannel = ref(null);
-  const videoStream = ref(null);
-  const audioStream = ref(null);
-  const isConnected = ref(false);
-  const uuid = ref(null);
-  const name = ref(null);
-  const currentDeviceId = ref(null);
-  const latency = ref(0);
-  const connectionType = ref('Unknown');
-  const isReconnecting = ref(false);
-  const lastPassword = ref('');
-  const reconnectionStatus = ref('');
-  const videoStats = ref({
-    fps: 0,
-    resolution: { width: 0, height: 0 },
-    packetsLost: 0,
-    jitter: 0
-  });
-  const connectionStats = ref({
+  // Connection state
+  const connectionState = {
+    peerConnection: ref(null),
+    eventChannel: ref(null),
+    videoStream: ref(null),
+    audioStream: ref(null),
+    isConnected: ref(false),
+    isReconnecting: ref(false),
+    latency: ref(0),
+    connectionType: ref('Unknown'),
+    reconnectionStatus: ref(''),
+    iceCandidateQueue: [],
+    receivedTracks: { video: false, audio: false }
+  };
+
+  // Authentication state
+  const authState = {
+    deviceId: ref(null),
+    password: ref(''),
+    clientId: ref(null),
+    clientName: ref(null)
+  };
+
+  // Connection stats
+  const stats = {
+    video: ref({
+      fps: 0,
+      resolution: { width: 0, height: 0 },
+      packetsLost: 0,
+      jitter: 0
+    }),
+    connection: ref({
+      bytesReceived: 0,
+      bytesSent: 0,
+      bandwidth: 0
+    })
+  };
+
+  // Connection control flags
+  let isAttemptingConnection = false;
+  let shouldPersistConnection = false;
+
+  // Timers and intervals
+  const timers = {
+    connectionAttempt: null,
+    latencyUpdate: null,
+    networkRetry: null
+  };
+
+  // Stats tracking
+  let lastStats = {
     bytesReceived: 0,
     bytesSent: 0,
-    bandwidth: 0
-  });
+    bandwidthUpdateTime: 0
+  };
 
-  // Connection state tracking
-  let isAttemptingConnection = false;
-  let shouldKeepTrying = false;
-  let connectionAttemptTimeout = null;
-  let latencyInterval = null;
-  let lastBytesReceived = 0;
-  let lastBytesSent = 0;
-  let lastBandwidthUpdate = 0;
-  let networkRetryTimeout = null;
-  const iceCandidatesQueue = ref([]);
-
-  // Watch for network state changes
+  // Watch for network state changes to handle reconnection
   watch(isOnline, async (newIsOnline) => {
-    if (newIsOnline && shouldKeepTrying && !isConnected.value) {
-      // Clear any existing retry timeout
-      if (networkRetryTimeout) {
-        clearTimeout(networkRetryTimeout);
-        networkRetryTimeout = null;
-      }
+    if (
+      newIsOnline &&
+      shouldPersistConnection &&
+      !connectionState.isConnected.value
+    ) {
+      clearNetworkRetryTimer();
+      resetConnectionState();
 
-      // Reset connection state
-      isAttemptingConnection = false;
-
-      // Trigger reconnection if we have connection details
-      if (currentDeviceId.value && lastPassword.value) {
-        reconnectionStatus.value =
+      if (authState.deviceId.value && authState.password.value) {
+        connectionState.reconnectionStatus.value =
           'Network connection restored, reconnecting...';
-        await connectToDevice(currentDeviceId.value, lastPassword.value);
+        await connectToDevice(
+          authState.deviceId.value,
+          authState.password.value
+        );
       }
-    } else if (!newIsOnline && shouldKeepTrying) {
-      reconnectionStatus.value =
+    } else if (!newIsOnline && shouldPersistConnection) {
+      connectionState.reconnectionStatus.value =
         'Network connection lost, waiting for network...';
-      // Force cleanup of existing connection
       cleanup();
     }
   });
 
+  /**
+   * Clean up all connection resources and timers
+   */
   const cleanup = () => {
-    // Clear all timeouts and intervals
-    if (connectionAttemptTimeout) {
-      clearTimeout(connectionAttemptTimeout);
-      connectionAttemptTimeout = null;
-    }
-    if (latencyInterval) {
-      clearInterval(latencyInterval);
-      latencyInterval = null;
-    }
-    if (networkRetryTimeout) {
-      clearTimeout(networkRetryTimeout);
-      networkRetryTimeout = null;
-    }
+    // Clear all timers
+    clearAllTimers();
 
     // Close and cleanup WebRTC connection
-    if (peerConnection.value) {
+    closeRTCConnection();
+
+    // Reset all streams
+    stopMediaStreams();
+
+    // Reset connection state
+    resetConnectionState();
+
+    // Reset stats
+    resetStats();
+  };
+
+  /**
+   * Reset all stats to default values
+   */
+  const resetStats = () => {
+    connectionState.latency.value = 0;
+    connectionState.connectionType.value = 'Unknown';
+    stats.video.value = {
+      fps: 0,
+      resolution: { width: 0, height: 0 },
+      packetsLost: 0,
+      jitter: 0
+    };
+    stats.connection.value = {
+      bytesReceived: 0,
+      bytesSent: 0,
+      bandwidth: 0
+    };
+    lastStats = {
+      bytesReceived: 0,
+      bytesSent: 0,
+      bandwidthUpdateTime: 0
+    };
+  };
+
+  /**
+   * Clear all active timers
+   */
+  const clearAllTimers = () => {
+    Object.keys(timers).forEach((key) => {
+      if (timers[key]) {
+        clearTimeout(timers[key]);
+        timers[key] = null;
+      }
+    });
+  };
+
+  /**
+   * Clear the network retry timer specifically
+   */
+  const clearNetworkRetryTimer = () => {
+    if (timers.networkRetry) {
+      clearTimeout(timers.networkRetry);
+      timers.networkRetry = null;
+    }
+  };
+
+  /**
+   * Close the RTC connection and data channels
+   */
+  const closeRTCConnection = () => {
+    if (connectionState.peerConnection.value) {
       try {
         // Close all tracks
-        const senders = peerConnection.value.getSenders();
+        const senders = connectionState.peerConnection.value.getSenders();
         senders.forEach((sender) => {
           if (sender.track) {
             sender.track.stop();
@@ -90,91 +163,117 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
         });
 
         // Close data channels
-        if (eventChannel.value) {
-          eventChannel.value.close();
+        if (connectionState.eventChannel.value) {
+          connectionState.eventChannel.value.close();
         }
 
-        peerConnection.value.close();
+        connectionState.peerConnection.value.close();
       } catch {
         // Ignore any errors during cleanup
       }
-      peerConnection.value = null;
+      connectionState.peerConnection.value = null;
     }
+  };
 
-    // Reset all streams
-    if (videoStream.value) {
+  /**
+   * Stop all media streams
+   */
+  const stopMediaStreams = () => {
+    // Stop video stream
+    if (connectionState.videoStream.value) {
       try {
-        videoStream.value.getTracks().forEach((track) => track.stop());
+        connectionState.videoStream.value
+          .getTracks()
+          .forEach((track) => track.stop());
       } catch {
         // Ignore stream cleanup errors
       }
-      videoStream.value = null;
+      connectionState.videoStream.value = null;
     }
-    if (audioStream.value) {
+
+    // Stop audio stream
+    if (connectionState.audioStream.value) {
       try {
-        audioStream.value.getTracks().forEach((track) => track.stop());
+        connectionState.audioStream.value
+          .getTracks()
+          .forEach((track) => track.stop());
       } catch {
         // Ignore stream cleanup errors
       }
-      audioStream.value = null;
+      connectionState.audioStream.value = null;
     }
+  };
 
-    // Reset all state
-    eventChannel.value = null;
-    isConnected.value = false;
-    iceCandidatesQueue.value = [];
+  /**
+   * Reset connection state to defaults
+   */
+  const resetConnectionState = () => {
+    connectionState.eventChannel.value = null;
+    connectionState.isConnected.value = false;
+    connectionState.iceCandidateQueue = [];
+    connectionState.receivedTracks = { video: false, audio: false };
     isAttemptingConnection = false;
   };
 
+  /**
+   * Initialize WebRTC connection
+   * @returns {boolean} Success status
+   */
   const initConnections = async () => {
     cleanup();
 
-    const timestamp = Date.now();
+    // Generate client ID from user data
+    // const timestamp = Date.now();
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
     if (!userData.id) {
       return false;
     }
 
-    uuid.value = `${userData.id}_${timestamp}`;
-    name.value = userData.name;
+    // authState.clientId.value = `${userData.id}_${timestamp}`;
+    authState.clientId.value = userData.id;
+    authState.clientName.value = userData.name;
 
-    peerConnection.value = new RTCPeerConnection({
+    // Create peer connection with empty ICE servers (will be updated later)
+    connectionState.peerConnection.value = new RTCPeerConnection({
       iceServers: []
     });
 
-    peerConnection.value.ontrack = (event) => {
+    // Set up event handlers
+    setupPeerConnectionEvents();
+    setupDataChannelHandler();
+    startConnectionMetricsMonitoring();
+
+    return true;
+  };
+
+  /**
+   * Set up event handlers for the peer connection
+   */
+  const setupPeerConnectionEvents = () => {
+    const pc = connectionState.peerConnection.value;
+
+    // Handle incoming tracks (video and audio)
+    pc.ontrack = (event) => {
       if (event.track.kind === 'video') {
-        videoStream.value = event.streams[0];
-        if (peerConnection.value?.getStats) {
-          peerConnection.value
-            .getStats()
-            .then((stats) => {
-              stats.forEach((report) => {
-                if (report.type === 'track' && report.kind === 'video') {
-                  videoStats.value.resolution = {
-                    width: report.frameWidth || 0,
-                    height: report.frameHeight || 0
-                  };
-                }
-              });
-            })
-            .catch(() => {
-              // Ignore stats collection errors
-            });
-        }
+        connectionState.videoStream.value = event.streams[0];
+        connectionState.receivedTracks.video = true;
+        updateVideoResolution();
       } else if (event.track.kind === 'audio') {
-        audioStream.value = event.streams[0];
+        connectionState.audioStream.value = event.streams[0];
+        connectionState.receivedTracks.audio = true;
       }
+      checkAndSendReadyState();
     };
 
-    peerConnection.value.onicecandidate = (event) => {
-      if (event.candidate && currentDeviceId.value) {
+    // Handle and forward ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate && authState.deviceId.value) {
         try {
           sendMessage({
             type: 'ice',
             ice: event.candidate,
-            from: uuid.value,
-            to: currentDeviceId.value
+            from: authState.clientId.value,
+            to: authState.deviceId.value
           });
         } catch {
           // Ignore ice candidate send errors
@@ -182,341 +281,462 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
       }
     };
 
-    peerConnection.value.onconnectionstatechange = () => {
-      const state = peerConnection.value?.connectionState;
+    // Handle connection state changes
+    pc.onconnectionstatechange = () => {
+      const state = pc?.connectionState;
 
       if (state === 'connected') {
-        isConnected.value = true;
-        isReconnecting.value = false;
-        reconnectionStatus.value = 'Connection established successfully';
+        connectionState.isConnected.value = true;
+        connectionState.isReconnecting.value = false;
+        connectionState.reconnectionStatus.value =
+          'Connection established successfully';
         isAttemptingConnection = false;
-
-        // Clear any pending retry timeouts
-        if (networkRetryTimeout) {
-          clearTimeout(networkRetryTimeout);
-          networkRetryTimeout = null;
-        }
-      } else if (state === 'disconnected' || state === 'failed') {
-        if (shouldKeepTrying) {
-          handleDisconnection();
-        }
+        clearNetworkRetryTimer();
+        checkAndSendReadyState();
+      } else if (
+        (state === 'disconnected' || state === 'failed') &&
+        shouldPersistConnection
+      ) {
+        handleDisconnection();
       }
     };
-
-    setupDataChannelHandler();
-    startLatencyUpdate();
-    return true;
   };
 
-  const connectToDevice = async (deviceId, password) => {
-    // Don't attempt connection if we're offline
-    if (!isOnline.value) {
-      reconnectionStatus.value =
-        'Waiting for network connection to become available...';
-      return false;
-    }
-
-    // Clear any existing retry timeout
-    if (networkRetryTimeout) {
-      clearTimeout(networkRetryTimeout);
-      networkRetryTimeout = null;
-    }
-
-    if (isAttemptingConnection) {
-      return false;
-    }
-
-    currentDeviceId.value = deviceId;
-    lastPassword.value = password;
-    shouldKeepTrying = true;
-
-    const attemptConnection = async () => {
-      if (!shouldKeepTrying) {
-        return;
-      }
-
-      isAttemptingConnection = true;
-
-      try {
-        if (!isOnline.value) {
-          reconnectionStatus.value =
-            'Waiting for network connection to become available...';
-          await waitForConnection();
-        }
-
-        reconnectionStatus.value = 'Setting up WebRTC connection...';
-        if (
-          !peerConnection.value ||
-          peerConnection.value.connectionState === 'failed'
-        ) {
-          await initConnections();
-        }
-
-        reconnectionStatus.value = 'Authenticating with remote device...';
-
-        // Send join message with retry logic
-        let joinSuccess = false;
-        for (let i = 0; i < 3; i++) {
-          try {
-            sendMessage({
-              type: 'join',
-              room: deviceId,
-              from: uuid.value,
-              name: name.value,
-              auth: { type: 'password', password }
-            });
-            joinSuccess = true;
-            break;
-          } catch {
-            if (i < 2) {
-              reconnectionStatus.value = `Retrying authentication (attempt ${i + 2}/3)...`;
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          }
-        }
-
-        if (!joinSuccess) {
-          throw new Error('Failed to join after multiple attempts');
-        }
-
-        reconnectionStatus.value = 'Waiting for connection confirmation...';
-
-        // Set connection attempt timeout
-        if (connectionAttemptTimeout) {
-          clearTimeout(connectionAttemptTimeout);
-        }
-
-        connectionAttemptTimeout = setTimeout(() => {
-          if (!isConnected.value && shouldKeepTrying) {
-            reconnectionStatus.value =
-              'Connection attempt timed out, retrying...';
-            isAttemptingConnection = false;
-            attemptConnection();
-          }
-        }, 5000);
-      } catch {
-        reconnectionStatus.value =
-          'Connection attempt failed, retrying in 2 seconds...';
-        isAttemptingConnection = false;
-
-        if (shouldKeepTrying) {
-          // Schedule retry with exponential backoff
-          const retryDelay = isOnline.value ? 2000 : 5000;
-          networkRetryTimeout = setTimeout(() => {
-            if (shouldKeepTrying) {
-              attemptConnection();
-            }
-          }, retryDelay);
-        }
-      }
-    };
-
-    await attemptConnection();
-    return true;
-  };
-
-  const handleDisconnection = () => {
-    if (!shouldKeepTrying) {
-      return;
-    }
-
-    isConnected.value = false;
-    isReconnecting.value = true;
-    reconnectionStatus.value = 'Connection lost, cleaning up resources...';
-    cleanup();
-
-    try {
-      sendMessage({
-        type: 'leave',
-        from: uuid.value
-      });
-    } catch {
-      // Ignore leave message send errors
-    }
-
-    // Only attempt immediate reconnection if we're online
-    if (currentDeviceId.value && lastPassword.value && shouldKeepTrying) {
-      if (isOnline.value) {
-        reconnectionStatus.value = 'Initiating reconnection...';
-        connectToDevice(currentDeviceId.value, lastPassword.value);
-      } else {
-        reconnectionStatus.value =
-          'Waiting for network connection to become available...';
-      }
-    }
-  };
-
-  const disconnect = () => {
-    shouldKeepTrying = false;
-    isAttemptingConnection = false;
-    reconnectionStatus.value = 'Disconnecting...';
-
-    // Clear any pending retry timeouts
-    if (networkRetryTimeout) {
-      clearTimeout(networkRetryTimeout);
-      networkRetryTimeout = null;
-    }
-
-    try {
-      sendMessage({
-        type: 'leave',
-        from: uuid.value
-      });
-    } catch {
-      // Ignore leave message send errors
-    }
-
-    cleanup();
-    reconnectionStatus.value = 'Disconnected';
-  };
-
-  onUnmounted(() => {
-    shouldKeepTrying = false;
-    isAttemptingConnection = false;
-
-    try {
-      // Try to send leave message before unmounting
-      if (uuid.value) {
-        sendMessage({
-          type: 'leave',
-          from: uuid.value
-        });
-      }
-    } catch {
-      // Ignore leave message send errors during unmount
-    }
-
-    cleanup();
-  });
-
-  const setupDataChannelHandler = () => {
-    if (peerConnection.value) {
-      peerConnection.value.ondatachannel = (event) => {
-        const dataChannel = event.channel;
-
-        dataChannel.onopen = () => {
-          eventChannel.value = dataChannel;
-        };
-
-        dataChannel.onclose = () => {
-          eventChannel.value = null;
-        };
-      };
-    }
-  };
-
-  const startLatencyUpdate = () => {
-    latencyInterval = setInterval(() => {
-      if (peerConnection.value && peerConnection.value.getStats) {
-        peerConnection.value.getStats().then((stats) => {
-          stats.forEach((report) => {
-            if (
-              report.type === 'candidate-pair' &&
-              (report.state === 'succeeded' || report.selected)
-            ) {
-              latency.value =
-                (report.currentRoundTripTime || report.roundTripTime || 0) *
-                1000;
-
-              // Find the local and remote candidate reports
-              const localCandidateId = report.localCandidateId;
-              const remoteCandidateId = report.remoteCandidateId;
-
-              let localCandidateType = '';
-              let remoteCandidateType = '';
-
-              // Look for the candidate types
-              stats.forEach((stat) => {
-                if (
-                  stat.type === 'local-candidate' &&
-                  stat.id === localCandidateId
-                ) {
-                  localCandidateType = stat.candidateType;
-                }
-                if (
-                  stat.type === 'remote-candidate' &&
-                  stat.id === remoteCandidateId
-                ) {
-                  remoteCandidateType = stat.candidateType;
-                }
-              });
-
-              // Determine connection type based on candidate types
-              if (
-                localCandidateType === 'relay' ||
-                remoteCandidateType === 'relay'
-              ) {
-                connectionType.value = 'Relayed';
-              } else {
-                connectionType.value = 'Direct';
-              }
-
-              // Update connection stats
-              const now = Date.now();
-              const timeDiff = (now - lastBandwidthUpdate) / 1000; // in seconds
-
-              if (timeDiff >= 1) {
-                const bytesReceivedDiff =
-                  report.bytesReceived - lastBytesReceived;
-                const bytesSentDiff = report.bytesSent - lastBytesSent;
-
-                connectionStats.value = {
-                  ...connectionStats.value,
-                  bytesReceived: report.bytesReceived,
-                  bytesSent: report.bytesSent,
-                  bandwidth:
-                    ((bytesReceivedDiff + bytesSentDiff) * 8) / timeDiff / 1000 // in kbps
-                };
-
-                lastBytesReceived = report.bytesReceived;
-                lastBytesSent = report.bytesSent;
-                lastBandwidthUpdate = now;
-              }
-            }
-
-            // Video stats
-            if (report.type === 'inbound-rtp' && report.kind === 'video') {
-              videoStats.value.fps = report.framesPerSecond || 0;
-              videoStats.value.packetsLost = report.packetsLost || 0;
-              videoStats.value.jitter = report.jitter || 0;
-              videoStats.value.resolution = {
+  /**
+   * Update video resolution from stats
+   */
+  const updateVideoResolution = () => {
+    const pc = connectionState.peerConnection.value;
+    if (pc?.getStats) {
+      pc.getStats()
+        .then((statsReport) => {
+          statsReport.forEach((report) => {
+            if (report.type === 'track' && report.kind === 'video') {
+              stats.video.value.resolution = {
                 width: report.frameWidth || 0,
                 height: report.frameHeight || 0
               };
             }
           });
+        })
+        .catch(() => {
+          // Ignore stats collection errors
         });
-      }
+    }
+  };
+
+  /**
+   * Set up the data channel handler for communication
+   */
+  const setupDataChannelHandler = () => {
+    if (connectionState.peerConnection.value) {
+      connectionState.peerConnection.value.ondatachannel = (event) => {
+        const dataChannel = event.channel;
+
+        dataChannel.onopen = () => {
+          connectionState.eventChannel.value = dataChannel;
+          checkAndSendReadyState();
+        };
+
+        dataChannel.onclose = () => {
+          connectionState.eventChannel.value = null;
+        };
+      };
+    }
+  };
+
+  /**
+   * Start monitoring connection metrics (latency, bandwidth, etc.)
+   */
+  const startConnectionMetricsMonitoring = () => {
+    // Clear any existing interval first
+    if (timers.latencyUpdate) {
+      clearInterval(timers.latencyUpdate);
+      timers.latencyUpdate = null;
+    }
+
+    // Start new monitoring interval
+    timers.latencyUpdate = setInterval(() => {
+      updateConnectionMetrics();
     }, 1000);
   };
 
+  /**
+   * Update connection metrics from WebRTC stats
+   */
+  const updateConnectionMetrics = () => {
+    const pc = connectionState.peerConnection.value;
+    if (!pc || !pc.getStats) return;
+
+    pc.getStats()
+      .then((statsReport) => {
+        statsReport.forEach((report) => {
+          // Update latency and connection type
+          if (
+            report.type === 'candidate-pair' &&
+            (report.state === 'succeeded' || report.selected)
+          ) {
+            updateLatencyAndConnectionType(report, statsReport);
+            updateBandwidthStats(report);
+          }
+
+          // Update video stats
+          if (report.type === 'inbound-rtp' && report.kind === 'video') {
+            updateVideoStats(report);
+          }
+        });
+      })
+      .catch(() => {
+        // Ignore stats errors
+      });
+  };
+
+  /**
+   * Update latency and connection type from stats
+   */
+  const updateLatencyAndConnectionType = (report, statsReport) => {
+    // Update latency
+    connectionState.latency.value =
+      (report.currentRoundTripTime || report.roundTripTime || 0) * 1000;
+
+    // Find the local and remote candidate reports
+    const localCandidateId = report.localCandidateId;
+    const remoteCandidateId = report.remoteCandidateId;
+
+    let localCandidateType = '';
+    let remoteCandidateType = '';
+
+    // Look for the candidate types
+    statsReport.forEach((stat) => {
+      if (stat.type === 'local-candidate' && stat.id === localCandidateId) {
+        localCandidateType = stat.candidateType;
+      }
+      if (stat.type === 'remote-candidate' && stat.id === remoteCandidateId) {
+        remoteCandidateType = stat.candidateType;
+      }
+    });
+
+    // Determine connection type based on candidate types
+    if (localCandidateType === 'relay' || remoteCandidateType === 'relay') {
+      connectionState.connectionType.value = 'Relayed';
+    } else {
+      connectionState.connectionType.value = 'Direct';
+    }
+  };
+
+  /**
+   * Update bandwidth stats
+   */
+  const updateBandwidthStats = (report) => {
+    const now = Date.now();
+    const timeDiff = (now - lastStats.bandwidthUpdateTime) / 1000; // in seconds
+
+    if (timeDiff >= 1) {
+      const bytesReceivedDiff = report.bytesReceived - lastStats.bytesReceived;
+      const bytesSentDiff = report.bytesSent - lastStats.bytesSent;
+
+      stats.connection.value = {
+        bytesReceived: report.bytesReceived,
+        bytesSent: report.bytesSent,
+        bandwidth: ((bytesReceivedDiff + bytesSentDiff) * 8) / timeDiff / 1000 // in kbps
+      };
+
+      lastStats.bytesReceived = report.bytesReceived;
+      lastStats.bytesSent = report.bytesSent;
+      lastStats.bandwidthUpdateTime = now;
+    }
+  };
+
+  /**
+   * Update video statistics from WebRTC stats
+   */
+  const updateVideoStats = (report) => {
+    stats.video.value.fps = report.framesPerSecond || 0;
+    stats.video.value.packetsLost = report.packetsLost || 0;
+    stats.video.value.jitter = report.jitter || 0;
+
+    if (report.frameWidth && report.frameHeight) {
+      stats.video.value.resolution = {
+        width: report.frameWidth,
+        height: report.frameHeight
+      };
+    }
+  };
+
+  /**
+   * Check if connection is ready and send ready state
+   */
+  const checkAndSendReadyState = () => {
+    if (
+      connectionState.isConnected.value &&
+      connectionState.eventChannel.value
+    ) {
+      try {
+        connectionState.reconnectionStatus.value =
+          'Waiting for video stream...';
+        connectionState.eventChannel.value.send('ready_state');
+      } catch {
+        //
+      }
+    }
+  };
+
+  /**
+   * Connect to a remote device
+   * @param {string} deviceId - ID of the device to connect to
+   * @param {string} password - Password for authentication
+   * @returns {Promise<boolean>} Success status
+   */
+  const connectToDevice = async (deviceId, password) => {
+    // Don't attempt connection if we're offline
+    if (!isOnline.value) {
+      connectionState.reconnectionStatus.value =
+        'Waiting for network connection to become available...';
+      return false;
+    }
+
+    clearNetworkRetryTimer();
+
+    if (isAttemptingConnection) {
+      return false;
+    }
+
+    // Store connection parameters for potential reconnection
+    authState.deviceId.value = deviceId;
+    authState.password.value = password;
+    shouldPersistConnection = true;
+
+    return performConnectionAttempt(1);
+  };
+
+  /**
+   * Handle disconnection event and potentially reconnect
+   */
+  const handleDisconnection = () => {
+    if (!shouldPersistConnection) {
+      return;
+    }
+
+    connectionState.isConnected.value = false;
+    connectionState.isReconnecting.value = true;
+    connectionState.reconnectionStatus.value =
+      'Connection lost, cleaning up resources...';
+
+    // Only cleanup the peer connection and streams, not the entire state
+    closeRTCConnection();
+    stopMediaStreams();
+
+    // Reset only necessary connection state
+    connectionState.eventChannel.value = null;
+    connectionState.iceCandidateQueue = [];
+    isAttemptingConnection = false;
+
+    // Only attempt immediate reconnection if we're online
+    if (
+      authState.deviceId.value &&
+      authState.password.value &&
+      shouldPersistConnection
+    ) {
+      if (isOnline.value) {
+        connectionState.reconnectionStatus.value = 'Initiating reconnection...';
+        // Create a new peer connection before attempting reconnection
+        connectionState.peerConnection.value = new RTCPeerConnection({
+          iceServers: []
+        });
+        setupPeerConnectionEvents();
+        setupDataChannelHandler();
+        connectToDevice(authState.deviceId.value, authState.password.value);
+      } else {
+        connectionState.reconnectionStatus.value =
+          'Waiting for network connection to become available...';
+      }
+    }
+  };
+
+  /**
+   * Perform the actual connection attempt
+   * @returns {Promise<boolean>} Success status
+   */
+  const performConnectionAttempt = async (count = 3) => {
+    if (!shouldPersistConnection) {
+      return false;
+    }
+
+    isAttemptingConnection = true;
+
+    try {
+      // Wait for network if offline
+      if (!isOnline.value) {
+        connectionState.reconnectionStatus.value =
+          'Waiting for network connection to become available...';
+        await waitForConnection();
+      }
+
+      // Initialize or reinitialize connections if needed
+      connectionState.reconnectionStatus.value = 'Setting up connection...';
+      if (
+        !connectionState.peerConnection.value ||
+        connectionState.peerConnection.value.connectionState === 'failed' ||
+        connectionState.peerConnection.value.connectionState === 'closed'
+      ) {
+        // Create a new peer connection
+        connectionState.peerConnection.value = new RTCPeerConnection({
+          iceServers: []
+        });
+        setupPeerConnectionEvents();
+        setupDataChannelHandler();
+      }
+
+      // Authenticate with remote device
+      connectionState.reconnectionStatus.value = 'Waiting for network...';
+      const deviceId = authState.deviceId.value;
+      const password = authState.password.value;
+
+      // Send join message with retry logic
+      if (!(await sendJoinMessageWithRetry(deviceId, password, count))) {
+        throw new Error('Failed to join after multiple attempts');
+      }
+
+      // Set connection timeout
+      setConnectionTimeout();
+
+      return true;
+    } catch (error) {
+      handleConnectionError(error);
+      return false;
+    }
+  };
+
+  /**
+   * Send join message with retry logic
+   * @param {string} deviceId - Device ID to join
+   * @param {string} password - Authentication password
+   * @returns {Promise<boolean>} Success status
+   */
+  const sendJoinMessageWithRetry = async (deviceId, password, count = 3) => {
+    const maxRetries = count;
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        sendMessage({
+          type: 'join',
+          room: deviceId,
+          from: authState.clientId.value,
+          name: authState.clientName.value,
+          auth: { type: 'password', password }
+        });
+        return true;
+      } catch {
+        if (i < maxRetries - 1) {
+          connectionState.reconnectionStatus.value = `Retrying authentication (attempt ${i + 2}/${maxRetries})...`;
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+    }
+
+    return false;
+  };
+
+  /**
+   * Set timeout for connection attempt
+   */
+  const setConnectionTimeout = () => {
+    if (timers.connectionAttempt) {
+      clearTimeout(timers.connectionAttempt);
+    }
+
+    timers.connectionAttempt = setTimeout(() => {
+      if (!connectionState.isConnected.value && shouldPersistConnection) {
+        connectionState.reconnectionStatus.value =
+          'Connection attempt timed out, retrying...';
+        isAttemptingConnection = false;
+        performConnectionAttempt();
+      }
+    }, 2000);
+  };
+
+  /**
+   * Handle connection error and schedule retry
+   */
+  const handleConnectionError = () => {
+    connectionState.reconnectionStatus.value =
+      'Connection attempt failed, retrying in 2 seconds...';
+    isAttemptingConnection = false;
+
+    if (shouldPersistConnection) {
+      // Schedule retry with exponential backoff
+      const retryDelay = 2000;
+      timers.networkRetry = setTimeout(() => {
+        if (shouldPersistConnection) {
+          performConnectionAttempt();
+        }
+      }, retryDelay);
+    }
+  };
+
+  /**
+   * Disconnect from the current session
+   */
+  const disconnect = () => {
+    shouldPersistConnection = false;
+    isAttemptingConnection = false;
+    connectionState.reconnectionStatus.value = 'Disconnecting...';
+
+    clearNetworkRetryTimer();
+
+    // Send leave message
+    try {
+      sendMessage({
+        type: 'leave',
+        from: authState.clientId.value
+      });
+    } catch {
+      // Ignore leave message send errors
+    }
+
+    cleanup();
+    connectionState.reconnectionStatus.value = 'Disconnected';
+  };
+
+  /**
+   * Add an ICE candidate to the peer connection
+   * @param {RTCIceCandidate} iceCandidate - ICE candidate to add
+   */
   const handleIceCandidate = async (iceCandidate) => {
     try {
-      if (peerConnection.value.remoteDescription) {
-        await peerConnection.value.addIceCandidate(
+      if (connectionState.peerConnection.value.remoteDescription) {
+        await connectionState.peerConnection.value.addIceCandidate(
           new RTCIceCandidate(iceCandidate)
         );
       } else {
-        iceCandidatesQueue.value.push(iceCandidate);
+        connectionState.iceCandidateQueue.push(iceCandidate);
       }
-    } catch (e) {
-      console.error('Error adding ICE candidate:', e);
+    } catch (error) {
+      console.error('Error adding ICE candidate:', error);
     }
   };
 
+  /**
+   * Process queued ICE candidates
+   */
   const processIceCandidateQueue = async () => {
-    while (iceCandidatesQueue.value.length) {
-      const iceCandidate = iceCandidatesQueue.value.shift();
+    while (connectionState.iceCandidateQueue.length) {
+      const iceCandidate = connectionState.iceCandidateQueue.shift();
       try {
-        await peerConnection.value.addIceCandidate(
+        await connectionState.peerConnection.value.addIceCandidate(
           new RTCIceCandidate(iceCandidate)
         );
-      } catch (e) {
-        console.error('Error processing queued ICE candidate:', e);
+      } catch (error) {
+        console.error('Error processing queued ICE candidate:', error);
       }
     }
   };
 
+  /**
+   * Get valid credential type for ICE servers
+   * @param {string} type - Credential type
+   * @returns {string} Valid credential type
+   */
   const getValidCredentialType = (type) => {
     // Valid values for RTCIceCredentialType are "password" and "oauth"
     if (type && ['password', 'oauth'].includes(type.toLowerCase())) {
@@ -526,58 +746,16 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
     return 'password';
   };
 
+  /**
+   * Handle server messages related to WebRTC
+   * @param {Object} signal - Signal object from server
+   */
   const handleServerMessage = async (signal) => {
-    if (signal.uuid === uuid.value) return;
+    if (signal.uuid === authState.clientId.value) return;
 
     switch (signal.type) {
       case 'offer':
-        try {
-          // Process ICE servers with proper credential type handling
-          const validIceServers = signal.ice_servers.map((ice) => {
-            const iceServer = {
-              urls: ice.urls
-            };
-
-            // Only add username and credential if they exist
-            if (ice.username) {
-              iceServer.username = ice.username;
-            }
-
-            if (ice.credential) {
-              iceServer.credential = ice.credential;
-
-              // Only add credentialType if credential exists and type is valid
-              if (ice.credential_type) {
-                iceServer.credentialType = getValidCredentialType(
-                  ice.credential_type
-                );
-              }
-            }
-
-            return iceServer;
-          });
-
-          peerConnection.value.setConfiguration({
-            iceServers: validIceServers
-          });
-
-          await peerConnection.value.setRemoteDescription(
-            new RTCSessionDescription(signal.sdp)
-          );
-          await processIceCandidateQueue();
-
-          const answer = await peerConnection.value.createAnswer();
-          await peerConnection.value.setLocalDescription(answer);
-          sendMessage({
-            type: 'answer',
-            sdp: answer,
-            from: uuid.value,
-            to: currentDeviceId.value
-          });
-        } catch (error) {
-          reconnectionStatus.value = `Connection error: ${error.message}`;
-          handleDisconnection();
-        }
+        await handleOfferMessage(signal);
         break;
       case 'ice':
         if (signal.ice) {
@@ -587,24 +765,116 @@ export function webRTC(websocket, sendMessage, isOnline, waitForConnection) {
     }
   };
 
+  /**
+   * Handle WebRTC offer message
+   * @param {Object} signal - Offer signal from server
+   */
+  const handleOfferMessage = async (signal) => {
+    try {
+      // Process ICE servers with proper credential type handling
+      const validIceServers = signal.ice_servers.map((ice) => {
+        const iceServer = {
+          urls: ice.urls
+        };
+
+        // Only add username and credential if they exist
+        if (ice.username) {
+          iceServer.username = ice.username;
+        }
+
+        if (ice.credential) {
+          iceServer.credential = ice.credential;
+
+          // Only add credentialType if credential exists and type is valid
+          if (ice.credential_type) {
+            iceServer.credentialType = getValidCredentialType(
+              ice.credential_type
+            );
+          }
+        }
+
+        return iceServer;
+      });
+
+      // Update ICE servers configuration
+      connectionState.peerConnection.value.setConfiguration({
+        iceServers: validIceServers
+      });
+
+      // Set remote description and create answer
+      await connectionState.peerConnection.value.setRemoteDescription(
+        new RTCSessionDescription(signal.sdp)
+      );
+
+      await processIceCandidateQueue();
+
+      const answer = await connectionState.peerConnection.value.createAnswer();
+      await connectionState.peerConnection.value.setLocalDescription(answer);
+
+      // Start metrics monitoring after connection is established
+      startConnectionMetricsMonitoring();
+
+      // Send answer back
+      sendMessage({
+        type: 'answer',
+        sdp: answer,
+        from: authState.clientId.value,
+        to: authState.deviceId.value
+      });
+    } catch (error) {
+      connectionState.reconnectionStatus.value = `Connection error: ${error.message}`;
+      handleDisconnection();
+    }
+  };
+
+  // Clean up on component unmount
+  onUnmounted(() => {
+    shouldPersistConnection = false;
+    isAttemptingConnection = false;
+
+    try {
+      // Try to send leave message before unmounting
+      if (authState.clientId.value) {
+        sendMessage({
+          type: 'leave',
+          from: authState.clientId.value
+        });
+      }
+    } catch {
+      // Ignore leave message send errors during unmount
+    }
+
+    cleanup();
+  });
+
+  // Return public API
   return {
+    // Core connection methods
     initConnections,
     connectToDevice,
     disconnect,
     handleServerMessage,
-    peerConnection,
-    eventChannel,
-    videoStream,
-    audioStream,
-    isConnected,
-    isReconnecting,
-    reconnectionStatus,
-    uuid,
-    currentDeviceId,
-    latency,
-    connectionType,
-    videoStats,
-    connectionStats,
+
+    // Connection state and streams
+    peerConnection: connectionState.peerConnection,
+    eventChannel: connectionState.eventChannel,
+    videoStream: connectionState.videoStream,
+    audioStream: connectionState.audioStream,
+    isConnected: connectionState.isConnected,
+    isReconnecting: connectionState.isReconnecting,
+    reconnectionStatus: connectionState.reconnectionStatus,
+
+    // Client identification
+    uuid: authState.clientId,
+    currentDeviceId: authState.deviceId,
+
+    // Connection metrics
+    latency: connectionState.latency,
+    connectionType: connectionState.connectionType,
+    videoStats: stats.video,
+    connectionStats: stats.connection,
+
+    // External dependencies
     websocket,
     isOnline
   };

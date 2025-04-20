@@ -37,8 +37,8 @@
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
     >
       <div class="relative w-full max-w-4xl rounded-lg p-4">
-        <video controls class="w-full">
-          <source :src="videoSrc" type="video/mp4" />
+        <video controls class="w-full" preload="metadata">
+          <source :src="videoSrc + '#t=0.1'" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
       </div>
@@ -272,8 +272,9 @@
             class="mt-4 overflow-hidden rounded-lg"
             controls
             playsinline
+            preload="metadata"
           >
-            <source :src="demo.videoSrc" type="video/mp4" />
+            <source :src="demo.videoSrc + '#t=0.1'" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>
@@ -309,9 +310,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 
+/*global defineOgImageComponent*/
+defineOgImageComponent('Remo', {
+  headline: 'Demo',
+  title: 'Try Remo 🙌',
+  description: 'Download the limited demo and try it out for yourself!',
+  colorMode: 'light'
+});
+
 const showVideo = ref(false);
 const videoSrc = ref(
-  'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/demo.mov'
+  'https://cdn.adidharmatoru.dev/dev/uploads/videos/demos/demo.mp4'
 );
 
 const domain = ref('');
@@ -329,25 +338,25 @@ const demos = [
     title: 'Productivity',
     description:
       'Check out how the hardware-accelerated streaming makes remote work and learning a breeze!',
-    videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/code.mov'
+    videoSrc: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/demos/code.mp4'
   },
   {
     title: 'Watch Party',
     description:
       'Join the fun with friends and enjoy and control live streams together, all with smooth performance!',
-    videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/watch.mov'
+    videoSrc: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/demos/watch.mp4'
   },
   {
     title: '3D / FPS Games',
     description:
       'Jump into the action and see Remo makes 3D and FPS gaming super smooth and interactive!',
-    videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/fps.mov'
+    videoSrc: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/demos/fps.mp4'
   },
   {
     title: 'MOBA / RTS Games',
     description:
       'Dive into the strategies of MOBAs and RTS games with minimal lag for an awesome experience!',
-    videoSrc: 'https://s3.adidharmatoru.dev/dev/uploads/videos/demos/moba.mov'
+    videoSrc: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/demos/moba.mp4'
   },
   {
     title: 'Mobile Gaming',

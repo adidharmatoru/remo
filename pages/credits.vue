@@ -150,6 +150,14 @@ import {
   Target
 } from 'lucide-vue-next';
 
+/*global defineOgImageComponent*/
+defineOgImageComponent('Remo', {
+  headline: 'Credits',
+  title: 'Credits & Roadmap',
+  description: 'Kudos to these awesome technologies and people. 🎉👏',
+  colorMode: 'light'
+});
+
 const technologies = [
   {
     name: 'Windows Graphic Capture',

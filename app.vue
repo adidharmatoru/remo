@@ -6,25 +6,6 @@ const route = useRoute();
 /*global webSocket*/
 const { isOnline } = webSocket(true);
 
-const title = ref('Remo');
-const description = ref('Hardware Accelerated Remote Desktop');
-const lang = 'en';
-
-// Update title based on the route's meta
-watch(route, () => {
-  title.value = route.meta.title || 'Remo';
-  description.value =
-    route.meta.description || 'Hardware Accelerated Remote Desktop';
-});
-
-// Set SEO metadata
-/*global useSeoMeta*/
-useSeoMeta({
-  title: title,
-  lang: lang,
-  description: description
-});
-
 const showHeaderFooter = computed(() => {
   return !['index', 'stream-deviceId'].includes(route.name);
 });
@@ -175,8 +156,9 @@ onUnmounted(() => {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background-color: var(--color-canvas-default);
   color: var(--color-fg-default);
   transition: background-color 0.3s;

@@ -1,7 +1,7 @@
 {
   "name": "remo",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "build": "nuxt build",
@@ -9,6 +9,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "start": "nuxt start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --end-of-line auto --write .",
@@ -19,9 +20,11 @@
     "@headlessui/vue": "^1.7.23",
     "@nuxt/icon": "^1.5.2",
     "@nuxtjs/color-mode": "latest",
+    "@nuxtjs/seo": "^3.0.2",
     "@nuxtjs/tailwindcss": "^6.12.1",
+    "@vite-pwa/nuxt": "^1.0.0",
     "lucide-vue-next": "^0.447.0",
-    "nuxt": "^3.13.0",
+    "nuxt": "^3.16.2",
     "uuid": "^10.0.0",
     "vue": "latest",
     "vue-router": "latest"
@@ -29,7 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^9.12.0",
     "@nuxt/test-utils": "^3.14.3",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/coverage-v8": "^3.1.1",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.12.0",
     "eslint-config-prettier": "^9.1.0",
@@ -39,6 +42,6 @@
     "happy-dom": "^15.7.4",
     "playwright-core": "^1.48.0",
     "prettier": "^3.3.3",
-    "vitest": "^2.1.8"
+    "vitest": "^3.1.1"
   }
 }

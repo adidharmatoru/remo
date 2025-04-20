@@ -42,9 +42,26 @@ export const keyboardControl = (eventChannel) => {
   }
 
   function cleanup() {
+    // First disable keyboard to prevent new events
     keyboardEnabled.value = false;
+
+    // Remove event listeners
     document.removeEventListener('keydown', keydownHandler);
     document.removeEventListener('keyup', keyupHandler);
+
+    // Create temporary handlers to remove any lingering preventDefault
+    const tempKeydownHandler = (event) => {
+      event.stopPropagation();
+    };
+    const tempKeyupHandler = (event) => {
+      event.stopPropagation();
+    };
+
+    // Add and immediately remove them to clear any lingering event prevention
+    document.addEventListener('keydown', tempKeydownHandler);
+    document.addEventListener('keyup', tempKeyupHandler);
+    document.removeEventListener('keydown', tempKeydownHandler);
+    document.removeEventListener('keyup', tempKeyupHandler);
   }
 
   return {

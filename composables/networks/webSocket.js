@@ -1,7 +1,37 @@
 import { ref, onMounted, onUnmounted } from 'vue';
+import { v4 as uuidv4 } from 'uuid';
 
 let globalWebSocket = null;
 let globalIsOnline = ref(false);
+
+// Add function to initialize user data
+export function initializeUserData() {
+  let userData;
+  try {
+    userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    if (!userData.id) {
+      userData = {
+        id: uuidv4(),
+        name: 'Anonymous'
+      };
+      localStorage.setItem('userData', JSON.stringify(userData));
+    }
+  } catch {
+    // Create temporary userData in memory if localStorage fails (e.g., in incognito)
+    userData = {
+      id: uuidv4(),
+      name: 'Anonymous'
+    };
+  }
+
+  // Store userData in memory regardless of localStorage success
+  try {
+    localStorage.setItem('userData', JSON.stringify(userData));
+  } catch {
+    // Ignore localStorage errors
+  }
+  return userData;
+}
 
 export function webSocket(isGlobal = true) {
   const websocket = ref(null);

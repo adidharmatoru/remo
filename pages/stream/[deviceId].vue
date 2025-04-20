@@ -254,7 +254,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import {
   Dialog,
@@ -267,6 +267,7 @@ import VirtualJoystick from '../components/VirtualJoystick.vue';
 import LoadingAnimation from '../components/LoadingAnimation.vue';
 import WebRTCStatsOverlay from '../components/WebRTCStatsOverlay.vue';
 import { joystickControl } from '../composables/controls/joystickControl';
+import { initializeUserData } from '../composables/networks/webSocket';
 
 const router = useRouter();
 const route = useRoute();
@@ -277,6 +278,14 @@ const isConnected = ref(false);
 const hasEstablishedConnection = ref(false);
 /*global computed*/
 const isEmbedMode = computed(() => route.query.embed === '1');
+
+/*global defineOgImageComponent*/
+defineOgImageComponent('Remo', {
+  headline: 'Remo - Stream',
+  title: route.params.deviceId,
+  description: 'Build, Stream, Game on! 🎮🔥',
+  colorMode: 'light'
+});
 
 // Initialize tracks
 /*global videoTrack*/
@@ -368,25 +377,31 @@ function updateFPS() {
   }
 }
 
-// Watch for eventChannel changes
-/*global watch*/
-watch(eventChannel, (newChannel) => {
-  if (newChannel) {
-    // console.log('Event channel established');
-  }
-});
-
 // Watch for successful connection
-watch([videoStream, fps], ([newVideoStream, newFps]) => {
-  if (newVideoStream && newFps > 0) {
-    hasEstablishedConnection.value = true;
-  }
-});
+watch(
+  [videoStream, fps],
+  ([newVideoStream, newFps]) => {
+    if (newVideoStream && newFps > 0) {
+      hasEstablishedConnection.value = true;
+      isConnected.value = true;
+    }
+  },
+  { immediate: true }
+);
 
 // Reset established connection state when reconnecting starts
 watch(isReconnecting, (newValue) => {
   if (newValue) {
     hasEstablishedConnection.value = false;
+    // Don't set isConnected to false here, as we're just reconnecting
+  }
+});
+
+// Watch for WebSocket reconnection
+watch(isOnline, async (newIsOnline) => {
+  if (newIsOnline && websocket.value) {
+    // Re-setup WebSocket handlers after reconnection
+    setupWebSocketHandlers();
   }
 });
 
@@ -411,7 +426,7 @@ const attemptConnection = async () => {
 
   const success = await connectToDevice(deviceId, password.value);
   if (!success) {
-    showModalError('Connection failed. Please try again.');
+    disconnect();
     return;
   }
 };
@@ -423,12 +438,48 @@ const handleDisconnect = () => {
 
 const redirectToDevices = () => {
   if (!isEmbedMode.value) {
-    router.push('/devices');
+    router.push({
+      path: '/devices',
+      query: {}
+    });
   }
+};
+
+const setupWebSocketHandlers = () => {
+  if (!websocket.value) return;
+
+  websocket.value.onmessage = async (event) => {
+    const signal = JSON.parse(event.data);
+
+    if (signal.type === 'join_declined') {
+      showModalError('Join declined: ' + signal.reason);
+    } else if (signal.type === 'offer') {
+      await handleServerMessage(signal);
+      isConnected.value = true;
+      showPasswordModal.value = false;
+
+      // Initialize video and audio tracks
+      if (videoStream.value) {
+        initVideoTrack(videoStream.value);
+      }
+      if (audioStream.value) {
+        await initAudioTrack(audioStream.value);
+      }
+    } else if (signal.type === 'server_closed') {
+      showModalError('The device is currently offline.');
+      redirectToDevices();
+    } else {
+      await handleServerMessage(signal);
+    }
+  };
 };
 
 // Initialize connections
 onMounted(async () => {
+  // Initialize user data using the shared function
+  initializeUserData();
+
+  // Initialize connections with guaranteed userData
   const success = initConnections();
   if (!success) {
     router.push('/devices');
@@ -444,31 +495,13 @@ onMounted(async () => {
     // Check if password is provided in URL
     if (route.query.pwd) {
       password.value = route.query.pwd;
+      await waitForConnection();
       await attemptConnection();
     } else {
       showPasswordModal.value = true;
     }
 
-    websocket.value.onmessage = async (event) => {
-      const signal = JSON.parse(event.data);
-
-      if (signal.type === 'join_declined') {
-        showModalError('Join declined: ' + signal.reason);
-      } else if (signal.type === 'offer') {
-        await handleServerMessage(signal);
-        isConnected.value = true;
-        showPasswordModal.value = false;
-
-        // Initialize video and audio tracks
-        initVideoTrack(videoStream.value);
-        await initAudioTrack(audioStream.value);
-      } else if (signal.type === 'server_closed') {
-        showModalError('The device is currently offline.');
-        redirectToDevices();
-      } else {
-        await handleServerMessage(signal);
-      }
-    };
+    setupWebSocketHandlers();
   }
 
   // Store the interval ID for cleanup

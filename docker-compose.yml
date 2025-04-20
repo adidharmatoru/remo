@@ -1,0 +1,14 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    ports:
+      - '80:80'
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=80
+      - HOST=0.0.0.0

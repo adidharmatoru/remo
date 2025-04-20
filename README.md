@@ -2,6 +2,7 @@
 
 [![CICD](https://github.com/adidharmatoru/remo/actions/workflows/cicd.yml/badge.svg)](https://github.com/adidharmatoru/remo/actions/workflows/cicd.yml)
 [![codecov](https://codecov.io/gh/adidharmatoru/remo/branch/master/graph/badge.svg)](https://codecov.io/gh/adidharmatoru/remo)
+[![Docker Pulls](https://img.shields.io/docker/pulls/adidharmatoru/remo)](https://hub.docker.com/r/adidharmatoru/remo)
 
 Remo is a hardware-accelerated remote desktop solution built with Rust and Nuxt 3. This repository contains the front-end application that provides a seamless user interface.
 
@@ -41,6 +42,16 @@ npm run dev
 ```
 
 This will start the server on http://localhost:3000, where you can access Remo.
+
+## Docker Compose
+
+You can also run Remo using Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+This will build and start the container in detached mode. The application will be available at http://localhost.
 
 ## Contributing
 

@@ -12,11 +12,12 @@
         }"
       >
         <video
-          :src="video.url"
+          :src="video.url + '#t=0.1'"
           class="h-full w-full object-cover"
           muted
           loop
           playsinline
+          preload="metadata"
           :ref="
             (el) => {
               if (el) videoRefs[index] = el;
@@ -131,6 +132,14 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
+
+/*global defineOgImageComponent*/
+defineOgImageComponent('Remo', {
+  headline: 'Greetings',
+  title: 'Welcome to Remo 👋',
+  description: 'Hardware-Accelerated Remote Desktop',
+  colorMode: 'light'
+});
 
 const name = ref('');
 const savedName = ref('');

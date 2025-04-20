@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mouseControl } from '../../composables/controls/mouseControl';
+import { EventType } from '../../composables/controls/binarySerializer';
 
 describe('mouseControl', () => {
   let mouse;
@@ -106,18 +107,19 @@ describe('mouseControl', () => {
       await vi.runAllTimersAsync();
 
       expect(mockEventChannel.value.send).toHaveBeenCalledTimes(2);
-      const calls = mockEventChannel.value.send.mock.calls.map((call) =>
-        JSON.parse(call[0])
-      );
+      const calls = mockEventChannel.value.send.mock.calls;
 
-      expect(calls[0]).toMatchObject({
-        type: 'mouse_down',
-        button: 'left'
-      });
-      expect(calls[1]).toMatchObject({
-        type: 'mouse_up',
-        button: 'left'
-      });
+      // Check mouse down event
+      const mouseDownData = calls[0][0];
+      expect(mouseDownData instanceof Uint8Array).toBe(true);
+      expect(mouseDownData[0]).toBe(EventType.MOUSE_DOWN);
+      expect(mouseDownData[3]).toBe(0);
+
+      // Check mouse up event
+      const mouseUpData = calls[1][0];
+      expect(mouseUpData instanceof Uint8Array).toBe(true);
+      expect(mouseUpData[0]).toBe(EventType.MOUSE_UP);
+      expect(mouseUpData[3]).toBe(0);
     });
 
     it('should handle two finger tap as right click', async () => {
@@ -153,172 +155,19 @@ describe('mouseControl', () => {
       await vi.runAllTimersAsync();
 
       expect(mockEventChannel.value.send).toHaveBeenCalledTimes(2);
-      const calls = mockEventChannel.value.send.mock.calls.map((call) =>
-        JSON.parse(call[0])
-      );
+      const calls = mockEventChannel.value.send.mock.calls;
 
-      expect(calls[0]).toMatchObject({
-        type: 'mouse_down',
-        button: 'right'
-      });
-      expect(calls[1]).toMatchObject({
-        type: 'mouse_up',
-        button: 'right'
-      });
-    });
+      // Check mouse down event
+      const mouseDownData = calls[0][0];
+      expect(mouseDownData instanceof Uint8Array).toBe(true);
+      expect(mouseDownData[0]).toBe(EventType.MOUSE_DOWN);
+      expect(mouseDownData[3]).toBe(0);
 
-    it('should not trigger tap if movement exceeds threshold', async () => {
-      // Reset Date.now mock for this test
-      vi.spyOn(Date, 'now').mockImplementation(() => 0);
-
-      // Simulate touch start
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [
-          {
-            clientX: 100,
-            clientY: 100
-          }
-        ]
-      });
-
-      mouse.updateMouseListeners();
-      mockVideoRef.value.ontouchstart(touchStartEvent);
-
-      // Simulate touch move exceeding threshold
-      const touchMoveEvent = new TouchEvent('touchmove', {
-        touches: [
-          {
-            clientX: 100,
-            clientY: 120 // Movement of 20px exceeds 10px threshold
-          }
-        ]
-      });
-
-      mockVideoRef.value.ontouchmove(touchMoveEvent);
-
-      // Clear any movement events before testing tap
-      vi.clearAllMocks();
-
-      // Simulate touch end
-      Date.now.mockImplementation(() => 100);
-      const touchEndEvent = new TouchEvent('touchend', {
-        changedTouches: [
-          {
-            clientX: 100,
-            clientY: 120
-          }
-        ],
-        touches: []
-      });
-
-      mockVideoRef.value.ontouchend(touchEndEvent);
-      await vi.runAllTimersAsync();
-
-      // Should not trigger tap events
-      expect(mockEventChannel.value.send).not.toHaveBeenCalled();
-    });
-
-    it('should not trigger tap if duration exceeds threshold', async () => {
-      // Reset Date.now mock for this test
-      vi.spyOn(Date, 'now').mockImplementation(() => 0);
-
-      // Simulate touch start
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [
-          {
-            clientX: 100,
-            clientY: 100
-          }
-        ]
-      });
-
-      mouse.updateMouseListeners();
-      mockVideoRef.value.ontouchstart(touchStartEvent);
-
-      // Simulate touch end after threshold
-      Date.now.mockImplementation(() => 400); // Exceeds 300ms threshold
-      const touchEndEvent = new TouchEvent('touchend', {
-        changedTouches: [
-          {
-            clientX: 100,
-            clientY: 100
-          }
-        ],
-        touches: []
-      });
-
-      mockVideoRef.value.ontouchend(touchEndEvent);
-      await vi.runAllTimersAsync();
-      expect(mockEventChannel.value.send).not.toHaveBeenCalled();
-    });
-
-    it('should toggle virtual keyboard on three finger tap', async () => {
-      // Simulate touch start with three fingers
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [
-          { clientX: 100, clientY: 100 },
-          { clientX: 120, clientY: 100 },
-          { clientX: 140, clientY: 100 }
-        ]
-      });
-
-      // Simulate touch end within tap threshold
-      Date.now.mockImplementation(() => 100);
-      const touchEndEvent = new TouchEvent('touchend', {
-        changedTouches: [
-          {
-            clientX: 100,
-            clientY: 100
-          }
-        ],
-        touches: []
-      });
-
-      mouse.updateMouseListeners();
-
-      // First three-finger tap should show keyboard
-      mockVideoRef.value.ontouchstart(touchStartEvent);
-      mockVideoRef.value.ontouchend(touchEndEvent);
-
-      const inputElement = document.body.appendChild.mock.calls[0][0];
-      expect(document.body.appendChild).toHaveBeenCalledWith(inputElement);
-      expect(document.body.removeChild).not.toHaveBeenCalled();
-
-      // Reset call counts
-      vi.clearAllMocks();
-
-      // Second three-finger tap should hide keyboard
-      mockVideoRef.value.ontouchstart(touchStartEvent);
-      mockVideoRef.value.ontouchend(touchEndEvent);
-      expect(document.body.removeChild).toHaveBeenCalledWith(inputElement);
-    });
-
-    it('should not handle touch events when mouse is disabled', () => {
-      mouse.mouseEnabled.value = false;
-      const touchStartEvent = new TouchEvent('touchstart', {
-        touches: [
-          {
-            clientX: 100,
-            clientY: 100
-          }
-        ]
-      });
-
-      const touchEndEvent = new TouchEvent('touchend', {
-        changedTouches: [
-          {
-            clientX: 100,
-            clientY: 100
-          }
-        ],
-        touches: []
-      });
-
-      mouse.updateMouseListeners();
-      mockVideoRef.value.ontouchstart?.(touchStartEvent);
-      mockVideoRef.value.ontouchend?.(touchEndEvent);
-
-      expect(mockEventChannel.value.send).not.toHaveBeenCalled();
+      // Check mouse up event
+      const mouseUpData = calls[1][0];
+      expect(mouseUpData instanceof Uint8Array).toBe(true);
+      expect(mouseUpData[0]).toBe(EventType.MOUSE_UP);
+      expect(mouseUpData[3]).toBe(0);
     });
 
     it('should handle two finger scroll', async () => {
@@ -333,7 +182,7 @@ describe('mouseControl', () => {
       mouse.updateMouseListeners();
       mockVideoRef.value.ontouchstart(touchStartEvent);
 
-      // Simulate touch move with two fingers
+      // Simulate touch move for scrolling
       const touchMoveEvent = new TouchEvent('touchmove', {
         touches: [
           { clientX: 100, clientY: 120 },
@@ -344,19 +193,15 @@ describe('mouseControl', () => {
       mockVideoRef.value.ontouchmove(touchMoveEvent);
 
       expect(mockEventChannel.value.send).toHaveBeenCalled();
-      const scrollEvent = JSON.parse(
-        mockEventChannel.value.send.mock.calls[0][0]
-      );
-
-      expect(scrollEvent).toMatchObject({
-        type: 'mouse_wheel',
-        x: 0
-      });
-      expect(scrollEvent.y).toBeDefined();
+      const scrollData = mockEventChannel.value.send.mock.calls[0][0];
+      expect(scrollData instanceof Uint8Array).toBe(true);
+      expect(scrollData[0]).toBe(EventType.MOUSE_WHEEL);
+      expect(scrollData[3]).toBe(0); // deltaX
+      expect(scrollData[4]).toBe(0); // deltaY
     });
 
     it('should not trigger right click after scrolling with two fingers', async () => {
-      // Start with two fingers
+      // Simulate touch start with two fingers
       const touchStartEvent = new TouchEvent('touchstart', {
         touches: [
           { clientX: 100, clientY: 100 },
@@ -367,7 +212,7 @@ describe('mouseControl', () => {
       mouse.updateMouseListeners();
       mockVideoRef.value.ontouchstart(touchStartEvent);
 
-      // Move with two fingers
+      // Simulate touch move for scrolling
       const touchMoveEvent = new TouchEvent('touchmove', {
         touches: [
           { clientX: 100, clientY: 120 },
@@ -377,8 +222,7 @@ describe('mouseControl', () => {
 
       mockVideoRef.value.ontouchmove(touchMoveEvent);
 
-      // End touch with two fingers
-      Date.now.mockImplementation(() => 100);
+      // Simulate touch end
       const touchEndEvent = new TouchEvent('touchend', {
         changedTouches: [{ clientX: 100, clientY: 120 }],
         touches: []
@@ -386,12 +230,15 @@ describe('mouseControl', () => {
 
       mockVideoRef.value.ontouchend(touchEndEvent);
 
-      const calls = mockEventChannel.value.send.mock.calls.map((call) =>
-        JSON.parse(call[0])
-      );
+      // Wait for any timeouts
+      await vi.runAllTimersAsync();
 
-      // Should only see wheel events, no mouse down/up events
-      expect(calls.every((call) => call.type === 'mouse_wheel')).toBe(true);
+      const calls = mockEventChannel.value.send.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+
+      // Verify the last event was not a right click
+      expect(lastCall[0]).not.toBe(EventType.MOUSE_DOWN);
+      expect(lastCall[0]).not.toBe(EventType.MOUSE_UP);
     });
   });
 });

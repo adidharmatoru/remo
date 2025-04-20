@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { sendEventData } from './binarySerializer';
 
 export const keyboardControl = (eventChannel) => {
   const keyboardEnabled = ref(false);
@@ -6,20 +7,12 @@ export const keyboardControl = (eventChannel) => {
   const keydownHandler = handleKeyAction('key_down');
   const keyupHandler = handleKeyAction('key_up');
 
-  function sendEventData(data) {
-    if (eventChannel.value && eventChannel.value.readyState === 'open') {
-      eventChannel.value.send(JSON.stringify(data));
-    } else {
-      console.warn('Event channel not ready');
-    }
-  }
-
   function handleKeyAction(action) {
     return (event) => {
       if (!keyboardEnabled.value) return;
       event.preventDefault();
 
-      sendEventData({
+      sendEventData(eventChannel.value, {
         type: action,
         key: event.code
       });

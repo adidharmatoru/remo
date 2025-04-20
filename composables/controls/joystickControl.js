@@ -1,5 +1,6 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
+import { sendEventData } from './binarySerializer';
 
 export const joystickControl = (eventChannel) => {
   const joystickEnabled = ref(false);
@@ -19,23 +20,6 @@ export const joystickControl = (eventChannel) => {
   } catch (error) {
     console.error(error);
     userId = uuidv4();
-  }
-
-  function sendEventData(data) {
-    if (!userId) {
-      return;
-    }
-
-    if (eventChannel.value && eventChannel.value.readyState === 'open') {
-      eventChannel.value.send(
-        JSON.stringify({
-          ...data,
-          id: userId
-        })
-      );
-    } else {
-      console.warn('Event channel not ready');
-    }
   }
 
   function handleGamepadConnected(event) {
@@ -112,14 +96,16 @@ export const joystickControl = (eventChannel) => {
   }
 
   function handleJoystickConnect() {
-    sendEventData({
-      type: 'gamepad_connect'
+    sendEventData(eventChannel.value, {
+      type: 'gamepad_connect',
+      id: userId
     });
   }
 
   function handleJoystickDisconnect() {
-    sendEventData({
-      type: 'gamepad_disconnect'
+    sendEventData(eventChannel.value, {
+      type: 'gamepad_disconnect',
+      id: userId
     });
   }
 
@@ -159,8 +145,9 @@ export const joystickControl = (eventChannel) => {
       return; // Don't send state if already idle
     }
 
-    sendEventData({
+    sendEventData(eventChannel.value, {
       type: 'gamepad_state',
+      id: userId,
       state: {
         buttons: state.buttons,
         axes: {

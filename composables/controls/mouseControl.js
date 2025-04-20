@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { sendEventData } from './binarySerializer';
 
 export const mouseControl = (videoRef, eventChannel) => {
   const mouseEnabled = ref(false);
@@ -25,14 +26,6 @@ export const mouseControl = (videoRef, eventChannel) => {
   const isTwoFingerTouch = ref(false);
   const lastTwoFingerY = ref(0);
   const scrollSensitivity = 10; // Adjust this value to control scroll speed
-
-  const sendEventData = (data) => {
-    if (eventChannel.value && eventChannel.value.readyState === 'open') {
-      eventChannel.value.send(JSON.stringify(data));
-    } else {
-      console.warn('Event channel not ready');
-    }
-  };
 
   const toCoordinate = (event) => {
     const video = videoRef.value;
@@ -82,7 +75,7 @@ export const mouseControl = (videoRef, eventChannel) => {
       ...(action !== 'mouse_move' ? { button: ButtonName[event.button] } : {})
     };
 
-    sendEventData(eventData);
+    sendEventData(eventChannel.value, eventData);
   };
 
   const onVideoWheel = (event) => {
@@ -96,7 +89,7 @@ export const mouseControl = (videoRef, eventChannel) => {
     const deltaX = event.deltaX ? event.deltaX : event.wheelDeltaX;
     const deltaY = event.deltaY ? event.deltaY : -event.wheelDelta;
 
-    sendEventData({
+    sendEventData(eventChannel.value, {
       type: 'mouse_wheel',
       x: Math.round(deltaX / sensitivity),
       y: Math.round(deltaY / sensitivity)
@@ -107,7 +100,7 @@ export const mouseControl = (videoRef, eventChannel) => {
     if (document.pointerLockElement === videoRef.value) {
       const movementX = event.movementX || 0;
       const movementY = event.movementY || 0;
-      sendEventData({
+      sendEventData(eventChannel.value, {
         type: 'mouse_move',
         x: movementX,
         y: movementY,
@@ -179,7 +172,7 @@ export const mouseControl = (videoRef, eventChannel) => {
       lastTwoFingerY.value = currentY;
 
       // Convert movement to scroll events
-      sendEventData({
+      sendEventData(eventChannel.value, {
         type: 'mouse_wheel',
         x: 0,
         y: -Math.round(deltaY / scrollSensitivity) // Negative to match natural scrolling
@@ -203,7 +196,7 @@ export const mouseControl = (videoRef, eventChannel) => {
       }
 
       // Always send movement events for cursor dragging
-      sendEventData({
+      sendEventData(eventChannel.value, {
         type: 'mouse_move',
         x: movementX,
         y: movementY,
@@ -231,14 +224,14 @@ export const mouseControl = (videoRef, eventChannel) => {
 
     switch (totalFingers) {
       case 1: // Single finger tap - left click
-        sendEventData({
+        sendEventData(eventChannel.value, {
           type: 'mouse_down',
           ...toCoordinate(touch),
           absolute: true,
           button: 'left'
         });
         setTimeout(() => {
-          sendEventData({
+          sendEventData(eventChannel.value, {
             type: 'mouse_up',
             ...toCoordinate(touch),
             absolute: true,
@@ -247,14 +240,14 @@ export const mouseControl = (videoRef, eventChannel) => {
         }, 50);
         break;
       case 2: // Two finger tap - right click
-        sendEventData({
+        sendEventData(eventChannel.value, {
           type: 'mouse_down',
           ...toCoordinate(touch),
           absolute: true,
           button: 'right'
         });
         setTimeout(() => {
-          sendEventData({
+          sendEventData(eventChannel.value, {
             type: 'mouse_up',
             ...toCoordinate(touch),
             absolute: true,

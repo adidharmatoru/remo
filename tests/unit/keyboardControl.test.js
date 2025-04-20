@@ -34,11 +34,12 @@ describe('keyboardControl', () => {
     document.dispatchEvent(event);
 
     expect(mockEventChannel.value.send).toHaveBeenCalledWith(
-      JSON.stringify({
-        type: 'key_down',
-        key: 'KeyA'
-      })
+      expect.any(Uint8Array)
     );
+    const sentData = mockEventChannel.value.send.mock.calls[0][0];
+    expect(sentData instanceof Uint8Array).toBe(true);
+    expect(sentData[0]).toBe(1); // key_down type
+    expect(String.fromCharCode(...sentData.slice(3))).toBe('KeyA');
   });
 
   it('should handle keyup events when enabled', () => {
@@ -48,11 +49,12 @@ describe('keyboardControl', () => {
     document.dispatchEvent(event);
 
     expect(mockEventChannel.value.send).toHaveBeenCalledWith(
-      JSON.stringify({
-        type: 'key_up',
-        key: 'KeyA'
-      })
+      expect.any(Uint8Array)
     );
+    const sentData = mockEventChannel.value.send.mock.calls[0][0];
+    expect(sentData instanceof Uint8Array).toBe(true);
+    expect(sentData[0]).toBe(2); // key_up type
+    expect(String.fromCharCode(...sentData.slice(3))).toBe('KeyA');
   });
 
   it('should handle event channel not ready', () => {

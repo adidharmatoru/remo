@@ -221,6 +221,35 @@
           />
         </button>
 
+        <!-- LiveKit Integration -->
+        <div class="floating-menu-divider" />
+        <button
+          class="menu-item relative inline-flex items-center justify-center"
+          title="Toggle Chat"
+          :class="showChat ? 'text-primary-500' : ''"
+          @click="toggleChat"
+          tabindex="-1"
+        >
+          <Icon name="lucide:message-circle" class="w-4 h-4" />
+          <span
+            v-if="unreadMessageCount > 0"
+            class="absolute top-0 right-0 -translate-x-3/4 -translate-y-1/5 rotate-[-90deg] min-w-[20px] h-[20px] rounded-full bg-red-500 text-white text-[11px] font-medium flex items-center justify-center px-1 transform-gpu"
+          >
+            {{ unreadMessageCount > 99 ? '99+' : unreadMessageCount }}
+          </span>
+        </button>
+
+        <div class="floating-menu-divider" />
+        <button
+          class="menu-item"
+          title="Toggle Call"
+          :class="showCall ? 'text-primary-500' : ''"
+          @click="toggleCall"
+          tabindex="-1"
+        >
+          <Icon name="lucide:phone-call" />
+        </button>
+
         <!-- Disconnect Button -->
         <div class="floating-menu-divider" />
         <button
@@ -250,11 +279,27 @@
       :video-stats="videoStats"
       :connection-stats="connectionStats"
     />
+
+    <!-- LiveKit Chat Component -->
+    <LiveKitChat
+      v-if="isConnected"
+      v-model:visible="showChat"
+      :room="livekitRoom"
+      @unread-message="handleUnreadMessage"
+    />
+
+    <!-- LiveKit Call Component -->
+    <LiveKitCall
+      v-if="isConnected"
+      v-model:visible="showCall"
+      :device-id="deviceId"
+      :room="livekitRoom"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import {
   Dialog,
@@ -263,11 +308,15 @@ import {
   TransitionChild,
   TransitionRoot
 } from '@headlessui/vue';
-import VirtualJoystick from '../components/VirtualJoystick.vue';
-import LoadingAnimation from '../components/LoadingAnimation.vue';
-import WebRTCStatsOverlay from '../components/WebRTCStatsOverlay.vue';
-import { joystickControl } from '../composables/controls/joystickControl';
-import { initializeUserData } from '../composables/networks/webSocket';
+import { RoomEvent, ConnectionState } from 'livekit-client';
+import VirtualJoystick from '~/components/VirtualJoystick.vue';
+import LoadingAnimation from '~/components/LoadingAnimation.vue';
+import WebRTCStatsOverlay from '~/components/WebRTCStatsOverlay.vue';
+import LiveKitChat from '~/components/LiveKitChat.vue';
+import LiveKitCall from '~/components/LiveKitCall.vue';
+import { joystickControl } from '~/composables/controls/joystickControl';
+import { initializeUserData } from '~/composables/networks/webSocket';
+import { useLiveKit } from '~/composables/useLiveKit';
 
 const router = useRouter();
 const route = useRoute();
@@ -276,8 +325,19 @@ const password = ref('');
 const errorMessage = ref('');
 const isConnected = ref(false);
 const hasEstablishedConnection = ref(false);
-/*global computed*/
+const deviceId = computed(() => route.params.deviceId);
 const isEmbedMode = computed(() => route.query.embed === '1');
+
+// LiveKit functionality
+const showChat = ref(false);
+const showCall = ref(false);
+const livekitRoom = ref(null);
+const unreadMessageCount = ref(0);
+const {
+  connect: connectToLiveKit,
+  disconnect: disconnectFromLiveKit,
+  connectionState
+} = useLiveKit();
 
 /*global defineOgImageComponent*/
 defineOgImageComponent('Remo', {
@@ -405,6 +465,19 @@ watch(isOnline, async (newIsOnline) => {
   }
 });
 
+// Watch LiveKit connection state and reconnect if needed
+watch(
+  [isConnected, connectionState],
+  async ([newIsConnected, newConnectionState]) => {
+    if (
+      newIsConnected &&
+      (!livekitRoom.value || newConnectionState === 'disconnected')
+    ) {
+      await initializeLiveKit();
+    }
+  }
+);
+
 const closePasswordModal = () => {
   showPasswordModal.value = false;
   redirectToDevices();
@@ -474,6 +547,62 @@ const setupWebSocketHandlers = () => {
   };
 };
 
+// Initialize LiveKit connection
+const initializeLiveKit = async () => {
+  try {
+    if (!livekitRoom.value) {
+      // Get username from userData in localStorage
+      let userName;
+      try {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        userName = userData.name;
+      } catch {
+        userName = null;
+      }
+
+      // Connect to LiveKit with device ID as room name (with full permissions)
+      const roomName = `${deviceId.value}`;
+      const room = await connectToLiveKit(roomName, userName);
+      livekitRoom.value = room;
+
+      // Monitor room connection state
+      room.on(RoomEvent.Disconnected, async () => {
+        await initializeLiveKit();
+      });
+
+      room.on(RoomEvent.ConnectionStateChanged, async (state) => {
+        if (state === ConnectionState.Disconnected) {
+          await initializeLiveKit();
+        }
+      });
+    }
+  } catch {
+    // Retry connection after a delay
+    setTimeout(initializeLiveKit, 5000);
+  }
+};
+
+// Toggle LiveKit chat visibility
+const toggleChat = () => {
+  showChat.value = !showChat.value;
+  if (showChat.value) {
+    // Reset unread count when opening chat
+    unreadMessageCount.value = 0;
+  }
+};
+
+// Toggle LiveKit call visibility
+const toggleCall = () => {
+  showCall.value = !showCall.value;
+};
+
+// Handle unread messages
+const handleUnreadMessage = () => {
+  if (!showChat.value) {
+    unreadMessageCount.value++;
+  }
+};
+
 // Initialize connections
 onMounted(async () => {
   // Initialize user data using the shared function
@@ -504,6 +633,13 @@ onMounted(async () => {
     setupWebSocketHandlers();
   }
 
+  // Initialize LiveKit chat connection when device connection is established
+  watch(isConnected, async (newIsConnected) => {
+    if (newIsConnected) {
+      await initializeLiveKit();
+    }
+  });
+
   // Store the interval ID for cleanup
   onUnmounted(() => {
     clearInterval(fpsInterval);
@@ -513,6 +649,12 @@ onMounted(async () => {
     cleanupVideo();
     cleanupAudio();
     disconnect();
+
+    // Clean up LiveKit resources
+    if (livekitRoom.value) {
+      disconnectFromLiveKit();
+      livekitRoom.value = null;
+    }
   });
 });
 </script>

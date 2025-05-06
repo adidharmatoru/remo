@@ -10,6 +10,20 @@ export default defineNuxtConfig({
     '@nuxtjs/seo',
     '@vite-pwa/nuxt'
   ],
+  // LiveKit configuration
+  runtimeConfig: {
+    livekit: {
+      apiKey: process.env.LIVEKIT_API_KEY,
+      apiSecret: process.env.LIVEKIT_API_SECRET,
+      wsUrl: process.env.LIVEKIT_WS_URL
+    },
+    // Keys within public are exposed to the client
+    public: {
+      livekit: {
+        wsUrl: process.env.LIVEKIT_WS_URL
+      }
+    }
+  },
   colorMode: {
     preference: 'dark', // default value of $colorMode.preference
     fallback: 'light', // fallback value if not system preference found

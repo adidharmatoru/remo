@@ -12,3 +12,6 @@ services:
       - NODE_ENV=production
       - PORT=80
       - HOST=0.0.0.0
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - LIVEKIT_WS_URL=${LIVEKIT_WS_URL:-wss://test-livekit-url.com}

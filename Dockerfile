@@ -28,10 +28,21 @@ COPY --from=builder /home/app/.output /home/app/.output
 COPY --from=builder /home/app/package.json /home/app/package.json
 COPY --from=builder /home/app/node_modules /home/app/node_modules
 
-ENV NODE_ENV=production
-ENV PORT=80
-ENV HOST=0.0.0.0
+# Define build-time arguments with defaults
+ARG NODE_ENV=production
+ARG PORT=80
+ARG HOST=0.0.0.0
 
-EXPOSE 80
+# Set default environment variables that can be overridden at runtime
+ENV NODE_ENV=${NODE_ENV}
+ENV PORT=${PORT}
+ENV HOST=${HOST}
+
+# Add runtime config variables for Nuxt
+ENV NUXT_LIVEKIT_API_KEY=""
+ENV NUXT_LIVEKIT_API_SECRET=""
+ENV NUXT_LIVEKIT_WS_URL=""
+
+EXPOSE ${PORT}
 
 CMD ["node", ".output/server/index.mjs"]

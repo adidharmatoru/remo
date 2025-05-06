@@ -37,9 +37,9 @@ export default defineEventHandler(async (event) => {
       canSubscribe: true,
       canPublishData: true,
       canPublishSources: [TrackSource.CAMERA, TrackSource.MICROPHONE],
-      roomList: false,
-      roomCreate: false,
-      roomAdmin: false
+      roomList: true,
+      roomCreate: true,
+      roomAdmin: true
     });
 
     // Return the token

@@ -315,7 +315,7 @@ import LiveKitChat from '~/components/LiveKitChat.vue';
 import LiveKitCall from '~/components/LiveKitCall.vue';
 import { joystickControl } from '~/composables/controls/joystickControl';
 import { initializeUserData } from '~/composables/networks/webSocket';
-import { useLiveKit } from '~/composables/useLiveKit';
+import { liveKit } from '~/composables/networks/liveKit';
 
 const router = useRouter();
 const route = useRoute();
@@ -333,7 +333,7 @@ const showCall = ref(false);
 const livekitRoom = ref(null);
 const unreadMessageCount = ref(0);
 const { connect: connectToLiveKit, disconnect: disconnectFromLiveKit } =
-  useLiveKit();
+  liveKit();
 
 /*global defineOgImageComponent*/
 defineOgImageComponent('Remo', {
@@ -535,17 +535,16 @@ const initializeLiveKit = async () => {
   try {
     if (!livekitRoom.value) {
       // Get username from userData in localStorage
-      let userName;
+      let userData;
       try {
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        userName = userData.name;
+        userData = JSON.parse(localStorage.getItem('userData') || '{}');
       } catch {
-        userName = null;
+        userData = {};
       }
 
       // Connect to LiveKit with device ID as room name (with full permissions)
       const roomName = `${deviceId.value}`;
-      const room = await connectToLiveKit(roomName, userName);
+      const room = await connectToLiveKit(roomName, userData);
       livekitRoom.value = room;
     }
   } catch {

@@ -5,10 +5,10 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
   // Validate request
-  if (!body.room || !body.identity) {
+  if (!body.room || !body.user) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing required fields: room and identity'
+      statusMessage: 'Missing required fields: room and user'
     });
   }
 
@@ -25,8 +25,8 @@ export default defineEventHandler(async (event) => {
   try {
     // Create a new access token
     const at = new AccessToken(apiKey, apiSecret, {
-      identity: body.identity,
-      name: body.identity
+      identity: body.user.id,
+      name: body.user.name
     });
 
     // Add permissions to the token with full access

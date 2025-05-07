@@ -12,6 +12,7 @@ export default defineVitestConfig({
         'coverage/**',
         'pages/**',
         'components/**',
+        'composables/**/*.ts',
         'app.vue',
         '**/*.d.ts',
         'test/**',

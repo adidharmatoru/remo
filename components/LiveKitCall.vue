@@ -167,13 +167,13 @@
             <div
               class="w-10 h-10 rounded-full bg-primary-500/30 flex items-center justify-center text-sm"
             >
-              {{ getInitials(participant.identity) }}
+              {{ getInitials(participant.name) }}
             </div>
           </div>
           <div
             class="absolute bottom-1 left-1 text-xs bg-black/50 px-1.5 py-0.5 rounded-md flex items-center space-x-1"
           >
-            <span>{{ participant.identity }}</span>
+            <span>{{ participant.name }}</span>
             <Icon
               v-if="participantAudio[participant.sid]"
               :name="
@@ -254,13 +254,13 @@
                 <div
                   class="w-16 h-16 rounded-full bg-primary-500/30 flex items-center justify-center"
                 >
-                  {{ getInitials(participant.identity) }}
+                  {{ getInitials(participant.name) }}
                 </div>
               </div>
               <div
                 class="absolute bottom-2 left-2 text-xs bg-black/50 px-2 py-1 rounded-md flex items-center space-x-1"
               >
-                <span>{{ participant.identity }}</span>
+                <span>{{ participant.name }}</span>
                 <Icon
                   v-if="participantAudio[participant.sid]"
                   :name="

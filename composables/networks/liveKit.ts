@@ -8,7 +8,6 @@ import {
   createLocalTracks,
   LocalTrack,
   ConnectionState,
-  Participant,
   ParticipantEvent,
   DataPacket_Kind,
   VideoPreset,
@@ -17,7 +16,7 @@ import {
 import type { RoomOptions } from 'livekit-client';
 import { ref, onUnmounted, computed } from 'vue';
 
-export const useLiveKit = () => {
+export const liveKit = () => {
   const config = useRuntimeConfig();
   const room = ref<Room | null>(null);
   const participants = ref<RemoteParticipant[]>([]);
@@ -157,7 +156,7 @@ export const useLiveKit = () => {
   };
 
   // Connect to a room with enhanced error handling
-  const connect = async (roomName: string, identity: string) => {
+  const connect = async (roomName: string, userData: any) => {
     try {
       error.value = null;
       isConnecting.value = true;
@@ -167,7 +166,10 @@ export const useLiveKit = () => {
         method: 'POST',
         body: {
           room: roomName,
-          identity
+          user: {
+            id: userData.id,
+            name: userData.name
+          }
         }
       });
 

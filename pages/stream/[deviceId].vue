@@ -60,34 +60,127 @@
               >
                 <div class="relative p-6">
                   <DialogTitle
-                    class="mb-4 text-xl font-medium text-high-contrast text-center"
+                    class="mb-6 text-xl font-medium text-high-contrast text-center"
                   >
                     Connect to Device
                   </DialogTitle>
 
-                  <div class="mb-4">
-                    <input
-                      v-model="password"
-                      type="password"
-                      placeholder="Enter device password"
-                      class="w-full rounded-lg border border-border-default bg-canvas-subtle px-4 py-2 text-high-contrast placeholder-default transition-colors focus:border-accent-emphasis focus:outline-none"
-                      @keyup.enter="attemptConnection"
-                    />
+                  <div class="mb-6">
+                    <div class="relative">
+                      <input
+                        v-model="password"
+                        :type="showPassword ? 'text' : 'password'"
+                        placeholder="Enter device password"
+                        class="w-full rounded-lg border border-border-default bg-canvas-subtle px-4 py-3 text-high-contrast placeholder-default transition-colors focus:border-accent-emphasis focus:outline-none pr-10"
+                        @keyup.enter="attemptConnection"
+                      />
+                      <button
+                        type="button"
+                        class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer text-default hover:text-high-contrast"
+                        @click="showPassword = !showPassword"
+                      >
+                        <Icon
+                          :name="
+                            showPassword
+                              ? 'heroicons:eye-slash-20-solid'
+                              : 'heroicons:eye-20-solid'
+                          "
+                          class="h-5 w-5"
+                        />
+                      </button>
+                    </div>
                     <p v-if="errorMessage" class="mt-2 text-sm text-danger-fg">
                       {{ errorMessage }}
                     </p>
                   </div>
 
+                  <div class="space-y-4 mb-6">
+                    <!-- Remember Password Toggle -->
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center space-x-2">
+                        <Icon
+                          name="heroicons:lock-closed-20-solid"
+                          class="h-5 w-5 text-default"
+                        />
+                        <span class="text-sm text-default"
+                          >Remember password</span
+                        >
+                      </div>
+                      <button
+                        @click="rememberPassword = !rememberPassword"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                        :class="
+                          rememberPassword
+                            ? 'bg-green-500'
+                            : 'bg-neutral-200 dark:bg-neutral-700'
+                        "
+                        role="switch"
+                        :aria-checked="rememberPassword"
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          :class="
+                            rememberPassword ? 'translate-x-5' : 'translate-x-0'
+                          "
+                        />
+                      </button>
+                    </div>
+
+                    <!-- Enable Mouse Toggle -->
+                    <!-- <div class="flex items-center justify-between">
+                      <div class="flex items-center space-x-2">
+                        <Icon name="lucide:mouse" class="h-5 w-5 text-default" />
+                        <span class="text-sm text-default">Enable mouse control</span>
+                      </div>
+                      <button 
+                        @click="enableMouseOnConnect = !enableMouseOnConnect"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                        :class="enableMouseOnConnect ? 'bg-green-500' : 'bg-neutral-200 dark:bg-neutral-700'"
+                        role="switch"
+                        :aria-checked="enableMouseOnConnect"
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          :class="enableMouseOnConnect ? 'translate-x-5' : 'translate-x-0'"
+                        />
+                      </button>
+                    </div> -->
+
+                    <!-- Enable Keyboard Toggle -->
+                    <!-- <div class="flex items-center justify-between">
+                      <div class="flex items-center space-x-2">
+                        <Icon name="lucide:keyboard" class="h-5 w-5 text-default" />
+                        <span class="text-sm text-default">Enable keyboard control</span>
+                      </div>
+                      <button 
+                        @click="enableKeyboardOnConnect = !enableKeyboardOnConnect"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                        :class="enableKeyboardOnConnect ? 'bg-green-500' : 'bg-neutral-200 dark:bg-neutral-700'"
+                        role="switch"
+                        :aria-checked="enableKeyboardOnConnect"
+                      >
+                        <span
+                          aria-hidden="true"
+                          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          :class="enableKeyboardOnConnect ? 'translate-x-5' : 'translate-x-0'"
+                        />
+                      </button>
+                    </div> -->
+                  </div>
+
                   <div class="flex justify-end space-x-4">
                     <button
-                      class="rounded-lg px-4 py-2 text-default transition-colors hover:text-high-contrast"
+                      class="rounded-lg px-4 py-2.5 text-default transition-colors hover:text-high-contrast border border-border-default hover:bg-canvas-subtle"
                       @click="closePasswordModal"
                     >
                       Cancel
                     </button>
                     <button
-                      class="flex items-center rounded-lg bg-accent-emphasis px-4 py-2 transition-all hover:bg-accent-emphasis/90"
+                      class="flex items-center rounded-lg px-4 py-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-border-default bg-canvas-subtle hover:bg-canvas-default text-high-contrast font-medium"
                       @click="attemptConnection"
+                      :disabled="!password"
                     >
                       <Icon
                         name="heroicons:link-20-solid"
@@ -421,6 +514,11 @@ const {
 const fps = ref(0);
 const showStats = ref(false);
 
+const rememberPassword = ref(false);
+const enableMouseOnConnect = ref(false);
+const enableKeyboardOnConnect = ref(false);
+const showPassword = ref(false);
+
 function updateFPS() {
   if (peerConnection.value && peerConnection.value.getStats) {
     peerConnection.value.getStats().then((stats) => {
@@ -473,6 +571,32 @@ const showModalError = (error) => {
   }
 };
 
+const savePassword = (deviceId, pwd) => {
+  if (rememberPassword.value) {
+    try {
+      const savedPasswords = JSON.parse(
+        localStorage.getItem('devicePasswords') || '{}'
+      );
+      savedPasswords[deviceId] = pwd;
+      localStorage.setItem('devicePasswords', JSON.stringify(savedPasswords));
+    } catch (error) {
+      console.error('Failed to save password:', error);
+    }
+  }
+};
+
+const getSavedPassword = (deviceId) => {
+  try {
+    const savedPasswords = JSON.parse(
+      localStorage.getItem('devicePasswords') || '{}'
+    );
+    return savedPasswords[deviceId] || '';
+  } catch (error) {
+    console.error('Failed to get saved password:', error);
+    return '';
+  }
+};
+
 const attemptConnection = async () => {
   const deviceId = route.params.deviceId;
   if (!deviceId || !password.value) {
@@ -484,6 +608,17 @@ const attemptConnection = async () => {
   if (!success) {
     disconnect();
     return;
+  }
+
+  // Save password if connection successful
+  savePassword(deviceId, password.value);
+
+  // Enable input devices based on user preferences
+  if (enableMouseOnConnect.value && !mouseEnabled.value) {
+    toggleMouse();
+  }
+  if (enableKeyboardOnConnect.value && !keyboardEnabled.value) {
+    toggleKeyboard();
   }
 };
 
@@ -598,7 +733,15 @@ onMounted(async () => {
       await waitForConnection();
       await attemptConnection();
     } else {
-      showPasswordModal.value = true;
+      // Check for saved password
+      const savedPassword = getSavedPassword(route.params.deviceId);
+      if (savedPassword) {
+        password.value = savedPassword;
+        await waitForConnection();
+        await attemptConnection();
+      } else {
+        showPasswordModal.value = true;
+      }
     }
 
     setupWebSocketHandlers();

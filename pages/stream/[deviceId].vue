@@ -308,7 +308,6 @@ import {
   TransitionChild,
   TransitionRoot
 } from '@headlessui/vue';
-import { RoomEvent, ConnectionState } from 'livekit-client';
 import VirtualJoystick from '~/components/VirtualJoystick.vue';
 import LoadingAnimation from '~/components/LoadingAnimation.vue';
 import WebRTCStatsOverlay from '~/components/WebRTCStatsOverlay.vue';
@@ -333,11 +332,8 @@ const showChat = ref(false);
 const showCall = ref(false);
 const livekitRoom = ref(null);
 const unreadMessageCount = ref(0);
-const {
-  connect: connectToLiveKit,
-  disconnect: disconnectFromLiveKit,
-  connectionState
-} = useLiveKit();
+const { connect: connectToLiveKit, disconnect: disconnectFromLiveKit } =
+  useLiveKit();
 
 /*global defineOgImageComponent*/
 defineOgImageComponent('Remo', {
@@ -465,19 +461,6 @@ watch(isOnline, async (newIsOnline) => {
   }
 });
 
-// Watch LiveKit connection state and reconnect if needed
-watch(
-  [isConnected, connectionState],
-  async ([newIsConnected, newConnectionState]) => {
-    if (
-      newIsConnected &&
-      (!livekitRoom.value || newConnectionState === 'disconnected')
-    ) {
-      await initializeLiveKit();
-    }
-  }
-);
-
 const closePasswordModal = () => {
   showPasswordModal.value = false;
   redirectToDevices();
@@ -564,17 +547,6 @@ const initializeLiveKit = async () => {
       const roomName = `${deviceId.value}`;
       const room = await connectToLiveKit(roomName, userName);
       livekitRoom.value = room;
-
-      // Monitor room connection state
-      room.on(RoomEvent.Disconnected, async () => {
-        await initializeLiveKit();
-      });
-
-      room.on(RoomEvent.ConnectionStateChanged, async (state) => {
-        if (state === ConnectionState.Disconnected) {
-          await initializeLiveKit();
-        }
-      });
     }
   } catch {
     // Retry connection after a delay

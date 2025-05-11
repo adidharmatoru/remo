@@ -314,6 +314,17 @@
           />
         </button>
 
+        <!-- Refresh Capture Button -->
+        <div class="floating-menu-divider" />
+        <button
+          class="menu-item"
+          title="Refresh Capture"
+          @click="sendRefreshCapture"
+          tabindex="-1"
+        >
+          <Icon name="lucide:refresh-cw" />
+        </button>
+
         <!-- LiveKit Integration -->
         <div class="floating-menu-divider" />
         <button
@@ -706,6 +717,13 @@ const toggleCall = () => {
 const handleUnreadMessage = () => {
   if (!showChat.value) {
     unreadMessageCount.value++;
+  }
+};
+
+// Send refresh capture message through the data channel after updating main display/changing display resolution or refresh rate
+const sendRefreshCapture = () => {
+  if (eventChannel.value && eventChannel.value.readyState === 'open') {
+    eventChannel.value.send('refresh_capture');
   }
 };
 

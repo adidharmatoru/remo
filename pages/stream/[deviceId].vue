@@ -635,6 +635,7 @@ const attemptConnection = async () => {
 
 const handleDisconnect = () => {
   disconnect();
+  keyboardEnabled.value = false;
   redirectToDevices();
 };
 
@@ -777,6 +778,7 @@ onMounted(async () => {
     clearInterval(fpsInterval);
     cleanupMouse();
     cleanupKeyboard();
+    keyboardEnabled.value = false;
     cleanupJoystick();
     cleanupVideo();
     cleanupAudio();

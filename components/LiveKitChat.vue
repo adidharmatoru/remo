@@ -25,6 +25,9 @@
       @mousemove="onDrag"
       @mouseup="stopDragging"
       @mouseleave="stopDragging"
+      @touchstart="startDragging"
+      @touchmove="onDrag"
+      @touchend="stopDragging"
     >
       <div class="flex items-center space-x-2">
         <Icon name="lucide:message-circle" class="w-4 h-4 text-primary-500" />
@@ -149,24 +152,36 @@ const initUsername = () => {
 // Dragging functionality
 const startDragging = (e) => {
   isDragging.value = true;
+  let clientX, clientY;
+  if (e.type.startsWith('touch')) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
   const rect = overlayRef.value.getBoundingClientRect();
   dragOffset.value = {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
+    x: clientX - rect.left,
+    y: clientY - rect.top
   };
 };
 
 const onDrag = (e) => {
   if (!isDragging.value) return;
-
-  const newX = e.clientX - dragOffset.value.x;
-  const newY = e.clientY - dragOffset.value.y;
-
-  // Keep the overlay within the viewport
+  let clientX, clientY;
+  if (e.type.startsWith('touch')) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+  const newX = clientX - dragOffset.value.x;
+  const newY = clientY - dragOffset.value.y;
   const rect = overlayRef.value.getBoundingClientRect();
   const maxX = window.innerWidth - rect.width;
   const maxY = window.innerHeight - rect.height;
-
   position.value = {
     x: Math.max(0, Math.min(newX, maxX)),
     y: Math.max(0, Math.min(newY, maxY))

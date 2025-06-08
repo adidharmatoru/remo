@@ -12,7 +12,7 @@
       left: position.x + 'px',
       transform: isDragging ? 'scale(1.02)' : 'scale(1)',
       transition: isDragging ? 'none' : 'all 0.2s ease',
-      width: isExpanded ? '450px' : '320px'
+      width: '320px'
     }"
   >
     <!-- Header -->
@@ -22,6 +22,9 @@
       @mousemove="onDrag"
       @mouseup="stopDragging"
       @mouseleave="stopDragging"
+      @touchstart="startDragging"
+      @touchmove="onDrag"
+      @touchend="stopDragging"
     >
       <div class="flex items-center space-x-2">
         <Icon name="lucide:phone-call" class="w-4 h-4 text-primary-500" />
@@ -38,16 +41,6 @@
         >
       </div>
       <div class="flex items-center space-x-2">
-        <button
-          class="p-1 hover:bg-white/10 rounded transition-colors flex items-center justify-center"
-          @click="isExpanded = !isExpanded"
-          title="Toggle expanded view"
-        >
-          <Icon
-            :name="isExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'"
-            class="w-4 h-4"
-          />
-        </button>
         <button
           class="p-1 hover:bg-white/10 rounded transition-colors flex items-center justify-center"
           @click="$emit('update:visible', false)"
@@ -121,8 +114,8 @@
       </div>
     </div>
 
-    <!-- Compact participants view (when minimized) -->
-    <div v-if="isConnected && !isExpanded" class="p-3">
+    <!-- Compact participants view (now always shown) -->
+    <div v-if="isConnected" class="p-3">
       <div class="grid grid-cols-1 gap-2">
         <!-- Local Participant -->
         <div
@@ -187,98 +180,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Participants and videos -->
-    <div
-      v-if="isExpanded"
-      class="p-3 overflow-y-auto"
-      style="max-height: 500px"
-    >
-      <div v-if="isConnected">
-        <!-- Local Participant -->
-        <div class="mb-4">
-          <div class="text-sm text-white/70 mb-2">Your Video</div>
-          <div
-            class="relative w-full h-[120px] bg-white/5 rounded-md overflow-hidden flex items-center justify-center"
-          >
-            <video
-              v-if="localVideoTrack && isVideoEnabled"
-              ref="localVideoRef"
-              autoplay
-              muted
-              playsinline
-              class="w-full h-full object-cover rounded-md"
-            ></video>
-            <div
-              v-else
-              class="absolute inset-0 flex items-center justify-center"
-            >
-              <div
-                class="w-16 h-16 rounded-full bg-primary-500/30 flex items-center justify-center"
-              >
-                {{ getInitials(displayName) }}
-              </div>
-            </div>
-            <div
-              class="absolute bottom-2 left-2 text-xs bg-black/50 px-2 py-1 rounded-md"
-            >
-              {{ displayName }} (You)
-            </div>
-          </div>
-        </div>
-
-        <!-- Remote Participants -->
-        <div v-if="remoteParticipants.length > 0">
-          <div class="text-sm text-white/70 mb-2">
-            Remote Participants ({{ remoteParticipants.length }})
-          </div>
-          <div
-            v-for="participant in remoteParticipants"
-            :key="participant.sid"
-            class="mb-3"
-          >
-            <div
-              class="relative w-full h-[120px] bg-white/5 rounded-md overflow-hidden flex items-center justify-center"
-            >
-              <video
-                v-if="participantVideos[participant.sid]"
-                :id="'video-' + participant.sid"
-                autoplay
-                playsinline
-                class="w-full h-full object-cover rounded-md"
-              ></video>
-              <div
-                v-else
-                class="absolute inset-0 flex items-center justify-center"
-              >
-                <div
-                  class="w-16 h-16 rounded-full bg-primary-500/30 flex items-center justify-center"
-                >
-                  {{ getInitials(participant.name) }}
-                </div>
-              </div>
-              <div
-                class="absolute bottom-2 left-2 text-xs bg-black/50 px-2 py-1 rounded-md flex items-center space-x-1"
-              >
-                <span>{{ participant.name }}</span>
-                <Icon
-                  v-if="participantAudio[participant.sid]"
-                  :name="
-                    participantAudioMuted[participant.sid]
-                      ? 'lucide:mic-off'
-                      : 'lucide:mic'
-                  "
-                  class="w-3 h-3"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div v-else class="text-center text-white/50 py-4">
-          No other participants in this call.
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -314,7 +215,6 @@ const overlayRef = ref(null);
 const position = ref({ x: 16, y: 150 });
 const dragOffset = ref({ x: 0, y: 0 });
 const isDragging = ref(false);
-const isExpanded = ref(false);
 
 // LiveKit specific refs
 const localVideoRef = ref(null);
@@ -356,24 +256,36 @@ const getInitials = (name) => {
 // Dragging functionality
 const startDragging = (e) => {
   isDragging.value = true;
+  let clientX, clientY;
+  if (e.type.startsWith('touch')) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
   const rect = overlayRef.value.getBoundingClientRect();
   dragOffset.value = {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
+    x: clientX - rect.left,
+    y: clientY - rect.top
   };
 };
 
 const onDrag = (e) => {
   if (!isDragging.value) return;
-
-  const newX = e.clientX - dragOffset.value.x;
-  const newY = e.clientY - dragOffset.value.y;
-
-  // Keep the overlay within the viewport
+  let clientX, clientY;
+  if (e.type.startsWith('touch')) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+  const newX = clientX - dragOffset.value.x;
+  const newY = clientY - dragOffset.value.y;
   const rect = overlayRef.value.getBoundingClientRect();
   const maxX = window.innerWidth - rect.width;
   const maxY = window.innerHeight - rect.height;
-
   position.value = {
     x: Math.max(0, Math.min(newX, maxX)),
     y: Math.max(0, Math.min(newY, maxY))
@@ -422,7 +334,9 @@ const connect = async () => {
         }
       } else if (track.kind === Track.Kind.Audio) {
         localAudioTrack.value = track;
-        isMuted.value = false;
+        // Mute audio track by default
+        await track.mute();
+        isMuted.value = true;
       }
     }
 

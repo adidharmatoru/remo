@@ -530,6 +530,23 @@ const enableMouseOnConnect = ref(false);
 const enableKeyboardOnConnect = ref(false);
 const showPassword = ref(false);
 
+function resetBodyScrollLock() {
+  document.documentElement.style.position = '';
+  document.documentElement.style.width = '';
+  document.documentElement.style.height = '';
+  document.body.style.position = '';
+  document.body.style.width = '';
+  document.body.style.height = '';
+  document.body.style.overflow = '';
+  document.body.style.touchAction = '';
+
+  // Remove the meta viewport tag added
+  const viewportMeta = document.head.querySelector('meta[name="viewport"]');
+  if (viewportMeta) {
+    document.head.removeChild(viewportMeta);
+  }
+}
+
 function updateFPS() {
   if (peerConnection.value && peerConnection.value.getStats) {
     peerConnection.value.getStats().then((stats) => {
@@ -634,12 +651,24 @@ const attemptConnection = async () => {
 };
 
 const handleDisconnect = () => {
-  disconnect();
-  keyboardEnabled.value = false;
   redirectToDevices();
 };
 
 const redirectToDevices = () => {
+  resetBodyScrollLock();
+  cleanupMouse();
+  cleanupKeyboard();
+  keyboardEnabled.value = false;
+  cleanupJoystick();
+  cleanupVideo();
+  cleanupAudio();
+  disconnect();
+
+  // Clean up LiveKit resources
+  if (livekitRoom.value) {
+    disconnectFromLiveKit();
+    livekitRoom.value = null;
+  }
   if (!isEmbedMode.value) {
     router.push({
       path: '/devices',
@@ -730,6 +759,23 @@ const sendRefreshCapture = () => {
 
 // Initialize connections
 onMounted(async () => {
+  // Prevent scrolling and force fullscreen on mobile
+  document.documentElement.style.position = 'fixed';
+  document.documentElement.style.width = '100%';
+  document.documentElement.style.height = '100%';
+  document.body.style.position = 'fixed';
+  document.body.style.width = '100%';
+  document.body.style.height = '100%';
+  document.body.style.overflow = 'hidden';
+  document.body.style.touchAction = 'none';
+
+  // Add meta viewport tag to prevent scaling
+  const viewportMeta = document.createElement('meta');
+  viewportMeta.name = 'viewport';
+  viewportMeta.content =
+    'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+  document.head.appendChild(viewportMeta);
+
   // Initialize user data using the shared function
   initializeUserData();
 
@@ -775,6 +821,7 @@ onMounted(async () => {
 
   // Store the interval ID for cleanup
   onUnmounted(() => {
+    resetBodyScrollLock();
     clearInterval(fpsInterval);
     cleanupMouse();
     cleanupKeyboard();

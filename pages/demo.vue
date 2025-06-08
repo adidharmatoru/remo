@@ -273,6 +273,7 @@
             controls
             playsinline
             preload="metadata"
+            style="aspect-ratio: 16/9"
           >
             <source :src="demo.videoSrc + '#t=0.1'" type="video/mp4" />
             Your browser does not support the video tag.
@@ -359,16 +360,30 @@ const demos = [
     videoSrc: 'https://cdn.adidharmatoru.dev/dev/uploads/videos/demos/moba.mp4'
   },
   {
-    title: 'Mobile Gaming',
+    title: 'Portable Gaming',
     description:
-      "Experience smooth mobile gaming with Remo's hardware acceleration - perfect for playing on the go!",
+      "Experience smooth mobile gaming with Remo's hardware acceleration - perfect for playing on the go! Captured on a iPhone 14 Pro Max",
+    videoSrc:
+      'https://cdn.adidharmatoru.dev/dev/uploads/videos/demos/mobile.mp4'
+  },
+  {
+    title: 'Multiplayer Gaming',
+    description:
+      "Experience smooth multiplayer gaming with Remo's hardware acceleration - perfect for playing with friends! Captured on a iPad Air 4th generation",
+    videoSrc:
+      'https://cdn.adidharmatoru.dev/dev/uploads/videos/demos/multiplayer.mp4'
+  },
+  {
+    title: 'Youtube Sharing',
+    description:
+      "Experience smooth youtube sharing with Remo's hardware acceleration - perfect for sharing your gameplay with friends!",
     isYoutubeEmbed: true,
     youtubeId: 'BKhFIZDeOLg'
   },
   {
-    title: 'Live Streaming',
+    title: 'Live Stream to Twitch',
     description:
-      "Stream your gameplay with friends and viewers from any device using Remo's low-latency connection!",
+      "Stream your gameplay to Twitch with Remo's low-latency connection!",
     isTwitchEmbed: true,
     twitchVideoId: '2342927439'
   }

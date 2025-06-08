@@ -539,12 +539,6 @@ function resetBodyScrollLock() {
   document.body.style.height = '';
   document.body.style.overflow = '';
   document.body.style.touchAction = '';
-
-  // Remove the meta viewport tag added
-  const viewportMeta = document.head.querySelector('meta[name="viewport"]');
-  if (viewportMeta) {
-    document.head.removeChild(viewportMeta);
-  }
 }
 
 function updateFPS() {
@@ -768,13 +762,6 @@ onMounted(async () => {
   document.body.style.height = '100%';
   document.body.style.overflow = 'hidden';
   document.body.style.touchAction = 'none';
-
-  // Add meta viewport tag to prevent scaling
-  const viewportMeta = document.createElement('meta');
-  viewportMeta.name = 'viewport';
-  viewportMeta.content =
-    'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
-  document.head.appendChild(viewportMeta);
 
   // Initialize user data using the shared function
   initializeUserData();

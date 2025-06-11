@@ -751,9 +751,44 @@ const sendRefreshCapture = () => {
   }
 };
 
-// Initialize connections
-onMounted(async () => {
-  // Prevent scrolling and force fullscreen on mobile
+// Mobile detection and orientation handling
+const isMobile = ref(false);
+const isLandscape = ref(false);
+
+const checkMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+};
+
+const checkOrientation = () => {
+  const orientation = screen.orientation || {};
+  const angle = orientation.angle || window.orientation || 0;
+  return Math.abs(angle) === 90;
+};
+
+const handleOrientationChange = async () => {
+  isMobile.value = checkMobile();
+  isLandscape.value = checkOrientation();
+  
+  if (isMobile.value && isLandscape.value) {
+    // Request fullscreen for immersive experience in landscape mode
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        await document.documentElement.webkitRequestFullscreen();
+      } else if (document.documentElement.mozRequestFullScreen) {
+        await document.documentElement.mozRequestFullScreen();
+      }
+    } catch (error) {
+      console.log('Fullscreen request failed:', error);
+    }
+  }
+  
+  applyMobileStyles();
+};
+
+const applyMobileStyles = () => {
+  // Prevent scrolling and optimize for both mobile and desktop
   document.documentElement.style.position = 'fixed';
   document.documentElement.style.width = '100%';
   document.documentElement.style.height = '100%';
@@ -762,6 +797,32 @@ onMounted(async () => {
   document.body.style.height = '100%';
   document.body.style.overflow = 'hidden';
   document.body.style.touchAction = 'none';
+  
+  // Hide address bar on iOS Safari
+  if (isMobile.value && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    window.scrollTo(0, 1);
+    setTimeout(() => window.scrollTo(0, 1), 100);
+  }
+};
+
+// Initialize connections
+onMounted(async () => {
+  // Initial mobile and orientation detection
+  isMobile.value = checkMobile();
+  isLandscape.value = checkOrientation();
+  applyMobileStyles();
+  
+  // Listen for orientation changes
+  window.addEventListener('orientationchange', handleOrientationChange);
+  window.addEventListener('resize', handleOrientationChange);
+  
+  // Handle fullscreen changes
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && isMobile.value && isLandscape.value) {
+      // Re-request fullscreen if it was exited in landscape mode
+      setTimeout(handleOrientationChange, 500);
+    }
+  });
 
   // Initialize user data using the shared function
   initializeUserData();
@@ -808,6 +869,10 @@ onMounted(async () => {
 
   // Store the interval ID for cleanup
   onUnmounted(() => {
+    // Clean up event listeners
+    window.removeEventListener('orientationchange', handleOrientationChange);
+    window.removeEventListener('resize', handleOrientationChange);
+    
     resetBodyScrollLock();
     clearInterval(fpsInterval);
     cleanupMouse();
@@ -852,5 +917,32 @@ video::-webkit-media-controls-enclosure {
 /* Add styles to prevent focus outlines */
 .menu-item:focus {
   outline: none !important;
+}
+
+/* Mobile landscape optimizations */
+@media screen and (orientation: landscape) and (max-width: 768px) {
+  .relative.h-screen {
+    height: 100vh !important;
+    height: 100dvh !important; /* Dynamic viewport height for better mobile support */
+  }
+}
+
+/* iOS Safari specific optimizations */
+@supports (-webkit-touch-callout: none) {
+  @media screen and (orientation: landscape) and (max-width: 768px) {
+    .relative.h-screen {
+      height: -webkit-fill-available !important;
+    }
+  }
+}
+
+/* Prevent pull-to-refresh and other mobile browser gestures */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 </style>

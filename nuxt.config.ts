@@ -39,6 +39,32 @@ export default defineNuxtConfig({
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
+      meta: [
+        // Mobile viewport optimizations
+        {
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+        },
+        // iOS Safari fullscreen
+        {
+          name: 'apple-mobile-web-app-capable',
+          content: 'yes'
+        },
+        {
+          name: 'apple-mobile-web-app-status-bar-style',
+          content: 'black-translucent'
+        },
+        // Android Chrome fullscreen
+        {
+          name: 'mobile-web-app-capable',
+          content: 'yes'
+        },
+        // Edge fullscreen
+        {
+          name: 'msapplication-TileColor',
+          content: '#000000'
+        }
+      ],
       link: [
         {
           rel: 'icon',
@@ -132,8 +158,8 @@ export default defineNuxtConfig({
       lang: 'en',
       theme_color: '#0b0d0e',
       background_color: '#ffffff',
-      display: 'standalone',
-      orientation: 'portrait',
+      display: 'fullscreen',
+      orientation: 'any',
       scope: '/',
       start_url: '/',
       id: '/',
